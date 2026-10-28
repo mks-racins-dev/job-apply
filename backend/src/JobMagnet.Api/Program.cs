@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -5,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 
 using JobMagnet.Api.Auth;
 using JobMagnet.Api.Cv;
+using JobMagnet.Api.Matches;
 using JobMagnet.Data;
 using JobMagnet.Data.Entities;
 using JobMagnet.Matching;
@@ -23,6 +26,7 @@ public static class Program
         builder.Services.AddJobMagnetMatching(builder.Configuration);
         builder.Services.AddHealthChecks().AddDbContextCheck<JobMagnetDbContext>();
         builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
         AddAuth(builder);
 
         var app = builder.Build();
@@ -40,6 +44,7 @@ public static class Program
         app.MapHealthChecks("/health");
         app.MapAuthEndpoints();
         app.MapCvEndpoints();
+        app.MapMatchEndpoints();
 
         await app.RunAsync();
     }

@@ -1,4 +1,5 @@
 using JobMagnet.Data;
+using JobMagnet.Matching;
 using JobMagnet.Scrapers;
 
 namespace JobMagnet.Worker;
@@ -11,7 +12,8 @@ public static class Program
 
         builder.Services.AddJobMagnetData(builder.Configuration);
         builder.Services.AddJobMagnetScrapers(builder.Configuration);
-        builder.Services.AddHostedService<ScrapeBackgroundService>();
+        builder.Services.AddJobMagnetMatching(builder.Configuration);
+        builder.Services.AddHostedService<PipelineBackgroundService>();
 
         var host = builder.Build();
         await host.RunAsync();
