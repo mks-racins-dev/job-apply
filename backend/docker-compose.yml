@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: jobmagnet
+      POSTGRES_USER: jobmagnet
+      POSTGRES_PASSWORD: jobmagnet
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobmagnet"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: src/JobMagnet.Api/Dockerfile
+    environment:
+      ConnectionStrings__Postgres: Host=postgres;Database=jobmagnet;Username=jobmagnet;Password=jobmagnet
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - "8080:8080"
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: src/JobMagnet.Worker/Dockerfile
+    environment:
+      ConnectionStrings__Postgres: Host=postgres;Database=jobmagnet;Username=jobmagnet;Password=jobmagnet
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      api:
+        condition: service_started
+
+volumes:
+  pgdata:
+  uploads:
