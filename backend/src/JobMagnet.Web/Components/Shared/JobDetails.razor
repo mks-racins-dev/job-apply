@@ -1,0 +1,71 @@
+<aside class="details card">
+    <button class="close link" aria-label="Close" @onclick="OnClose">×</button>
+
+    <div class="score-pill">@Match.Score<small>/100</small></div>
+    <h2>@Match.Job.Title</h2>
+    <p class="muted">
+        @(Match.Job.Company ?? "Company not stated")
+        @if (Match.Job.City is not null)
+        {
+            <span> · @Match.Job.City</span>
+        }
+    </p>
+
+    <p class="reason">@Match.Reason</p>
+
+    <dl>
+        <dt>Salary</dt>
+        <dd>@Salary</dd>
+        <dt>Source</dt>
+        <dd>@Match.Job.Source</dd>
+    </dl>
+
+    @if (Match.MatchedSkills.Count > 0)
+    {
+        <h3>You bring</h3>
+        <div class="tags">
+            @foreach (var skill in Match.MatchedSkills)
+            {
+                <span class="tag ok">@skill</span>
+            }
+        </div>
+    }
+
+    @if (Match.MissingSkills.Count > 0)
+    {
+        <h3>They also want</h3>
+        <div class="tags">
+            @foreach (var skill in Match.MissingSkills)
+            {
+                <span class="tag warn">@skill</span>
+            }
+        </div>
+    }
+
+    <div class="actions">
+        <button class="@(Match.Status == MatchStatus.Interested ? "primary" : null)"
+                @onclick="() => OnStatus.InvokeAsync(MatchStatus.Interested)">
+            @(Match.Status == MatchStatus.Interested ? "★ Interested" : "☆ Interested")
+        </button>
+        <button @onclick="() => OnStatus.InvokeAsync(MatchStatus.Dismissed)">Dismiss</button>
+        <a class="button primary" href="@Match.Job.Url" target="_blank" rel="noopener">Open original ↗</a>
+    </div>
+</aside>
+
+@code {
+    [Parameter, EditorRequired]
+    public MatchItem Match { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback<MatchStatus> OnStatus { get; set; }
+
+    private string Salary => (Match.Job.SalaryMin, Match.Job.SalaryMax) switch
+    {
+        (null, null) => "Not stated",
+        ({ } min, { } max) when min != max => $"€{min:0} – €{max:0} / month",
+        _ => $"€{Match.Job.SalaryMin ?? Match.Job.SalaryMax:0} / month"
+    };
+}

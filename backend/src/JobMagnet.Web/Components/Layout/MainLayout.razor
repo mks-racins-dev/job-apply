@@ -1,0 +1,80 @@
+﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject AuthSession Session
+@inject NavigationManager Navigation
+
+@if (_loaded)
+{
+    <header class="topbar">
+        <a class="brand" href="/">Job Magnet</a>
+        @if (Session.IsSignedIn)
+        {
+            <nav>
+                <NavLink href="/" Match="NavLinkMatch.All">Orbit</NavLink>
+                <NavLink href="/profile">Profile</NavLink>
+                <NavLink href="/cv">CV</NavLink>
+            </nav>
+            <div class="account">
+                <span class="muted">@Session.Email</span>
+                <button class="link" @onclick="SignOutAsync">Sign out</button>
+            </div>
+        }
+    </header>
+
+    <main class="page">
+        @Body
+    </main>
+}
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code {
+    private const string LoginPath = "login";
+
+    private bool _loaded;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Error and not-found pages render statically, where browser storage is unreachable.
+        if (!RendererInfo.IsInteractive)
+        {
+            _loaded = true;
+            return;
+        }
+
+        await Session.LoadAsync();
+        _loaded = true;
+        Session.Changed += OnSessionChanged;
+        Navigation.LocationChanged += OnLocationChanged;
+        RedirectIfSignedOut();
+    }
+
+    private void OnSessionChanged()
+    {
+        RedirectIfSignedOut();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e) => RedirectIfSignedOut();
+
+    private void RedirectIfSignedOut()
+    {
+        var onLogin = Navigation.ToBaseRelativePath(Navigation.Uri).StartsWith(LoginPath, StringComparison.OrdinalIgnoreCase);
+        if (!Session.IsSignedIn && !onLogin)
+        {
+            Navigation.NavigateTo(LoginPath);
+        }
+    }
+
+    private async Task SignOutAsync() => await Session.SignOutAsync();
+
+    public void Dispose()
+    {
+        Session.Changed -= OnSessionChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+}

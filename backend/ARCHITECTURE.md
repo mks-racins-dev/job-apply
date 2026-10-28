@@ -1,9 +1,10 @@
 # How the backend works
 
-Two processes share one Postgres database:
+Two backend processes share one Postgres database, and a web app sits in front of them:
 
-- **Api**: what the app talks to (auth, CV upload, profile, matches).
+- **Api**: what clients talk to (auth, CV upload, profile, matches).
 - **Worker**: a background loop that scrapes jobs and scores them for users.
+- **Web**: a Blazor Server UI that only talks to the Api over HTTP, just like the future mobile app will.
 
 ```
 Worker (every 2h):  scrape 3 sites ─▶ Jobs table ─▶ prefilter per user ─▶ Claude scores ─▶ Matches table
@@ -19,6 +20,7 @@ Api:                register/login ─▶ upload CV ─▶ Claude builds profile
 | `JobMagnet.Matching` | `ClaudeJsonClient`, CV → profile, prefilter, scoring, `MatchingService` |
 | `JobMagnet.Api` | Minimal API endpoints, JWT auth, PDF/DOCX text extraction |
 | `JobMagnet.Worker` | `PipelineBackgroundService`: runs ingestion, then matching, on a timer |
+| `JobMagnet.Web` | Blazor UI: sign-in, CV upload, profile review, the job orbit |
 
 ## Data model
 
@@ -76,6 +78,21 @@ All Claude calls go through `IClaudeJsonClient` (model `claude-opus-5-5`, low ef
 
 Authenticated endpoints need the header `Authorization: Bearer <token>`.
 
+## Web app
+
+Blazor Web App with interactive server rendering and **prerendering turned off**, because the session token lives in browser storage, which isn't reachable during a prerender.
+
+- `AuthSession` (one per circuit) keeps the JWT and stores it in `ProtectedLocalStorage`, which is encrypted with ASP.NET Data Protection, so a reload stays signed in. In Docker the keys live in the `webkeys` volume. If the keys are lost, users are simply signed out.
+- `JobMagnetApiClient` wraps every API call and returns an `ApiResult<T>` instead of throwing. A 401 signs the user out, and `MainLayout` then redirects to `/login`.
+- `MainLayout` loads the session before rendering any page and sends signed-out users to `/login`.
+
+| Page | Does |
+|---|---|
+| `/login` | Sign in or register |
+| `/cv` | Upload a PDF/DOCX; on success, goes to `/profile` |
+| `/profile` | Edits the Claude-built profile; the first save confirms it and turns matching on |
+| `/` | The orbit: you in the center, matches as bubbles. A higher score puts the bubble closer and makes it bigger (`OrbitLayout`), and *Interested* pulls it further in. Clicking a bubble opens `JobDetails` and marks the match as seen. The page refreshes every minute; this stands in for push notifications |
+
 ## Configuration
 
 | Key | Where | Default |
@@ -87,7 +104,8 @@ Authenticated endpoints need the header `Authorization: Bearer <token>`.
 | `Database:MigrateOnStartup` | api | `true` |
 | `Scrapers:*` | worker | 3 pages, 10s delay, every 2h, inactive after 3 days |
 | `Matching:*` | worker | 20 candidates, batches of 10, notify threshold 70 |
-| `Claude:Model`, `Claude:MaxTokens` | both | `claude-opus-5-5`, 16000 |
+| `Api:BaseUrl` | web | `http://localhost:8080/` (dev: `:5034`) |
+| `Claude:Model`, `Claude:MaxTokens` | api, worker | `claude-opus-5-5`, 16000 |
 
 You can override any key with an environment variable, using `__` as the separator (e.g. `Scrapers__MaxPagesPerSource=1`).
 

@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\JobMagnet.Scrapers\JobMagnet.Scrapers.csproj" />
     <ProjectReference Include="..\..\src\JobMagnet.Matching\JobMagnet.Matching.csproj" />
     <ProjectReference Include="..\..\src\JobMagnet.Api\JobMagnet.Api.csproj" />
+    <ProjectReference Include="..\..\src\JobMagnet.Web\JobMagnet.Web.csproj" />
   </ItemGroup>
 
 </Project>

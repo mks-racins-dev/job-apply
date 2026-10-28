@@ -1,0 +1,215 @@
+﻿@page "/"
+@implements IAsyncDisposable
+@inject JobMagnetApiClient Api
+@inject AuthSession Session
+
+<PageTitle>Your orbit · Job Magnet</PageTitle>
+
+@switch (_state)
+{
+    case HomeState.Loading:
+        <p class="muted">Loading…</p>
+        break;
+
+    case HomeState.NeedsCv:
+        <section class="card narrow">
+            <h1>Let's get jobs coming to you</h1>
+            <p class="muted">Upload your CV once. We build a profile, and matching jobs from visidarbi.lv, cv.lv and ss.lv start orbiting you.</p>
+            <a class="button primary" href="/cv">Upload CV</a>
+        </section>
+        break;
+
+    case HomeState.NeedsConfirmation:
+        <section class="card narrow">
+            <h1>One more step</h1>
+            <p class="muted">Review the profile we built from your CV. Matching starts once you save it.</p>
+            <a class="button primary" href="/profile">Review profile</a>
+        </section>
+        break;
+
+    case HomeState.Error:
+        <section class="card narrow">
+            <p class="error">@_error</p>
+            <button @onclick="LoadAsync">Try again</button>
+        </section>
+        break;
+
+    default:
+        <div class="home">
+            <div class="home-main">
+                <div class="toolbar">
+                    <div>
+                        <h1>Your orbit</h1>
+                        <p class="muted">@SummaryText</p>
+                    </div>
+                    <label class="slider">
+                        Min score <strong>@_minScore</strong>
+                        <input type="range" min="0" max="90" step="10" value="@_minScore" @onchange="OnMinScoreChangedAsync" />
+                    </label>
+                </div>
+
+                @if (_matches.Count == 0)
+                {
+                    <div class="empty card">
+                        <p>No matches above @_minScore yet.</p>
+                        <p class="muted">The worker scrapes and scores new jobs every 2 hours. This page refreshes on its own.</p>
+                    </div>
+                }
+                else
+                {
+                    <JobOrbit Matches="_matches" MinScore="_minScore" SelectedId="_selected?.Id"
+                              Email="@Session.Email" OnSelect="SelectAsync" />
+                }
+            </div>
+
+            @if (_selected is not null)
+            {
+                <JobDetails Match="_selected" OnClose="() => _selected = null" OnStatus="SetStatusAsync" />
+            }
+        </div>
+        break;
+}
+
+@code {
+    private const int DefaultMinScore = 50;
+
+    // Stands in for push notifications on the web: new matches drift in without a reload.
+    private static readonly TimeSpan RefreshInterval = TimeSpan.FromMinutes(1);
+
+    private enum HomeState { Loading, NeedsCv, NeedsConfirmation, Ready, Error }
+
+    private readonly CancellationTokenSource _cts = new();
+    private HomeState _state = HomeState.Loading;
+    private List<MatchItem> _matches = [];
+    private MatchItem? _selected;
+    private int _minScore = DefaultMinScore;
+    private string? _error;
+
+    private string SummaryText
+    {
+        get
+        {
+            var fresh = _matches.Count(m => m.Status == MatchStatus.New);
+            var total = $"{_matches.Count} job{(_matches.Count == 1 ? "" : "s")} pulled in";
+            return fresh > 0 ? $"{total} · {fresh} new" : total;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        _ = RefreshLoopAsync(_cts.Token);
+    }
+
+    private async Task LoadAsync()
+    {
+        var profile = await Api.GetProfileAsync();
+        if (profile.StatusCode == StatusCodes.Status404NotFound)
+        {
+            _state = HomeState.NeedsCv;
+            return;
+        }
+
+        if (profile is not { IsSuccess: true, Value: { } response })
+        {
+            _error = profile.Error;
+            _state = HomeState.Error;
+            return;
+        }
+
+        if (!response.IsConfirmed)
+        {
+            _state = HomeState.NeedsConfirmation;
+            return;
+        }
+
+        await LoadMatchesAsync();
+    }
+
+    private async Task LoadMatchesAsync()
+    {
+        var result = await Api.GetMatchesAsync(_minScore);
+        if (!result.IsSuccess)
+        {
+            _error = result.Error;
+            _state = HomeState.Error;
+            return;
+        }
+
+        _matches = result.Value ?? [];
+        _selected = _selected is null ? null : _matches.FirstOrDefault(m => m.Id == _selected.Id);
+        _state = HomeState.Ready;
+    }
+
+    private async Task RefreshLoopAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(RefreshInterval);
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                if (_state == HomeState.Ready)
+                {
+                    await InvokeAsync(async () =>
+                    {
+                        await LoadMatchesAsync();
+                        StateHasChanged();
+                    });
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Page closed.
+        }
+    }
+
+    private async Task OnMinScoreChangedAsync(ChangeEventArgs e)
+    {
+        _minScore = int.TryParse(e.Value?.ToString(), out var value) ? value : DefaultMinScore;
+        await LoadMatchesAsync();
+    }
+
+    private async Task SelectAsync(MatchItem match)
+    {
+        _selected = match;
+        if (match.Status == MatchStatus.New)
+        {
+            await SetStatusAsync(MatchStatus.Seen);
+        }
+    }
+
+    private async Task SetStatusAsync(MatchStatus status)
+    {
+        if (_selected is not { } match)
+        {
+            return;
+        }
+
+        // Toggling Interested off returns the job to a plain seen state.
+        var target = match.Status == MatchStatus.Interested && status == MatchStatus.Interested ? MatchStatus.Seen : status;
+        var result = await Api.UpdateMatchStatusAsync(match.Id, target);
+        if (!result.IsSuccess)
+        {
+            _error = result.Error;
+            return;
+        }
+
+        if (target == MatchStatus.Dismissed)
+        {
+            _matches.Remove(match);
+            _selected = null;
+            return;
+        }
+
+        var updated = match with { Status = target };
+        _matches[_matches.IndexOf(match)] = updated;
+        _selected = updated;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _cts.CancelAsync();
+        _cts.Dispose();
+    }
+}
