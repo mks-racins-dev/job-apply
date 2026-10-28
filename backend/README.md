@@ -18,3 +18,5 @@ dotnet ef migrations add <Name> -p src/JobMagnet.Data -s src/JobMagnet.Api -o Mi
 ```
 
 The API applies pending migrations on startup when `Database:MigrateOnStartup` is true.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for how the pieces fit together.
