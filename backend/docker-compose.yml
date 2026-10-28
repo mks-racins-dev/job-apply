@@ -21,6 +21,8 @@ services:
     environment:
       ConnectionStrings__Postgres: Host=postgres;Database=jobmagnet;Username=jobmagnet;Password=jobmagnet
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?set JWT_SIGNING_KEY (32+ chars)}
+      Storage__UploadsPath: /app/uploads
     ports:
       - "8080:8080"
     volumes:
