@@ -79,6 +79,9 @@ namespace JobMagnet.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTimeOffset>("FirstSeenAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -123,6 +126,8 @@ namespace JobMagnet.Data.Migrations
 
                     b.HasIndex("Source", "ExternalId")
                         .IsUnique();
+
+                    b.HasIndex("Source", "FirstSeenAt");
 
                     b.ToTable("Jobs");
                 });

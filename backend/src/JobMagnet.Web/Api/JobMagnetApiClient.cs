@@ -55,6 +55,8 @@ public class JobMagnetApiClient(HttpClient http, AuthSession session)
     public Task<ApiResult<MatchItem>> SubmitJobAsync(SubmitJobRequest request, CancellationToken cancellationToken) =>
         SendAsync<MatchItem>(HttpMethod.Post, "jobs", JsonContent.Create(request, options: JsonOptions), cancellationToken);
 
+    public Task<ApiResult<JobFeed>> GetJobFeedAsync() => SendAsync<JobFeed>(HttpMethod.Get, "jobs/feed");
+
     public Task<ApiResult<object>> UpdateMatchStatusAsync(Guid matchId, MatchStatus status) =>
         SendAsync<object>(HttpMethod.Patch, $"matches/{matchId}", JsonContent.Create(new StatusUpdate(status), options: JsonOptions));
 

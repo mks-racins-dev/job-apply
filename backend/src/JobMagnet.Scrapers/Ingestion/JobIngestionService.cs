@@ -106,6 +106,7 @@ public class JobIngestionService(
         SalaryMax = item.SalaryMax,
         Description = item.Description,
         PostedAt = item.PostedAt,
+        FirstSeenAt = now,
         LastSeenAt = now,
         DedupeHash = hash
     };

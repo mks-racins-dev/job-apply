@@ -48,6 +48,7 @@ public static class Program
         app.MapCvEndpoints();
         app.MapMatchEndpoints();
         app.MapSubmittedJobEndpoints();
+        app.MapJobFeedEndpoints();
 
         await app.RunAsync();
     }

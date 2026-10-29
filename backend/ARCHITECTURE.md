@@ -27,7 +27,7 @@ Api:                register/login ─▶ upload CV ─▶ Claude builds profile
 - `User`: email, password hash, avatar (index into the web app's 16 illustrated avatars).
 - `CvDocument`: the uploaded file path and its extracted text.
 - `Profile`: one per user. The structured profile is stored as `jsonb` so its schema can change without migrations. `IsConfirmed` becomes true once the user saves it.
-- `Job`: unique per `(Source, ExternalId)`. `DedupeHash` identifies the same vacancy posted on several sites. `IsActive` turns false when a job hasn't been seen for 3 days.
+- `Job`: unique per `(Source, ExternalId)`. `DedupeHash` identifies the same vacancy posted on several sites. `FirstSeenAt` is when we first scraped it (not the site's posting date). `IsActive` turns false when a job hasn't been seen for 3 days.
 - `Match`: one per `(User, Job)`, with a score from 0 to 100, a reason, matched and missing skills, and a status (`New`/`Seen`/`Interested`/`Dismissed`).
 
 ## Scraping
@@ -88,6 +88,7 @@ All Claude calls go through `IClaudeJsonClient` (model `claude-opus-5-5`, low ef
 | `GET /profile`, `PUT /profile` | ✓ | `PUT` body is the profile JSON and confirms it |
 | `GET /matches?minScore=50&page=1&pageSize=25&sort=score&dir=desc` | ✓ | Active, not-dismissed matches, one page at a time: `{ items, total, newCount, page, pageSize }`. `sort` is one of score, title, company, city, salary, source or added; jobs without a salary always sort last |
 | `PATCH /matches/{id}` | ✓ | `{ "status": "Interested" }` |
+| `GET /jobs/feed` | ✓ | Freshness per site: last new job, jobs added in the last 24 h, active jobs, last check. Scraped jobs only |
 | `POST /jobs` | ✓ | `{ "url"?, "text" }`: adds a pasted job, returns its match |
 
 Authenticated endpoints need the header `Authorization: Bearer <token>`.

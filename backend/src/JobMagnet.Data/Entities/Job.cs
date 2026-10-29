@@ -26,6 +26,9 @@ public class Job
 
     public DateTimeOffset? PostedAt { get; set; }
 
+    // When we first scraped (or the user pasted) it, as opposed to the site's own posting date.
+    public DateTimeOffset FirstSeenAt { get; set; }
+
     public DateTimeOffset LastSeenAt { get; set; }
 
     public bool IsActive { get; set; } = true;

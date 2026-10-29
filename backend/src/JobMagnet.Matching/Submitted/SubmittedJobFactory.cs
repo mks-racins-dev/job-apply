@@ -51,6 +51,7 @@ public static class SubmittedJobFactory
             SalaryMax = extracted.SalaryMax,
             Description = extracted.Description,
             PostedAt = now,
+            FirstSeenAt = now,
             LastSeenAt = now,
             SubmittedByUserId = userId,
             DedupeHash = Hash(string.Join('|', TextNormalizer.Normalize(extracted.Title), TextNormalizer.Normalize(extracted.Company), TextNormalizer.Normalize(extracted.City)))

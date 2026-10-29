@@ -44,6 +44,10 @@
                     <CandidateRecord Profile="_profile" AvatarId="Session.AvatarId" />
                 }
                 <PipelineStatus Total="_total" New="_newCount" Interested="_interestedCount" MinScore="_minScore" />
+                @if (_feed is not null)
+                {
+                    <JobFeedPanel Feed="_feed" Now="_now" />
+                }
             </aside>
 
             <section class="home-main panel" aria-labelledby="matches-title">
@@ -195,6 +199,8 @@
     private int _newCount;
     private int _interestedCount;
     private ProfileData? _profile;
+    private JobFeed? _feed;
+    private DateTimeOffset _now = DateTimeOffset.UtcNow;
     private string? _error;
 
     private List<MatchItem> TopPicks => _matches.OrderByDescending(m => m.Score).Take(TopPickCount).ToList();
@@ -317,12 +323,24 @@
             return;
         }
 
+        await LoadFeedAsync();
         _matches = page.Items;
         _total = page.Total;
         _newCount = page.NewCount;
         _interestedCount = page.InterestedCount;
         _selected = _selected is null ? null : _matches.FirstOrDefault(m => m.Id == _selected.Id);
         _state = HomeState.Ready;
+    }
+
+    // Freshness is a nice-to-have: if it fails, the panel simply keeps its last value.
+    private async Task LoadFeedAsync()
+    {
+        _now = DateTimeOffset.UtcNow;
+        var feed = await Api.GetJobFeedAsync();
+        if (feed is { IsSuccess: true, Value: { } value })
+        {
+            _feed = value;
+        }
     }
 
     private async Task RefreshLoopAsync(CancellationToken cancellationToken)

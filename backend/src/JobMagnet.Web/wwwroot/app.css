@@ -525,6 +525,33 @@ section > form .primary[type=submit] { width: 100%; padding: .7rem; }
 .tone-ok { background: var(--ok); }
 .tone-seen { background: var(--seen); }
 
+/* ---------- Job feed ---------- */
+
+.feed-latest { display: flex; align-items: center; gap: .55rem; font-weight: 550; font-size: .95rem; margin-bottom: .9rem; }
+.feed-pulse { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--seen); }
+.feed-pulse.fresh { background: var(--ok); }
+.feed-pulse.fresh::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid var(--ok);
+    opacity: 0;
+    animation: pulse 2.4s var(--ease-out) infinite;
+}
+@keyframes pulse {
+    0% { opacity: .55; transform: scale(.6); }
+    100% { opacity: 0; transform: scale(1.6); }
+}
+
+.feed-sources { list-style: none; margin: 0; padding: 0 .85rem; border-radius: var(--radius); background: var(--fill); }
+.feed-sources li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: baseline; gap: .6rem; padding: .6rem 0; font-size: .84rem; }
+.feed-sources li + li { border-top: 1px solid var(--hairline); }
+.feed-source { font-weight: 500; }
+.feed-added { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.feed-added.has-new { color: var(--ok-ink); font-weight: 600; }
+.feed-when { color: var(--muted); min-width: 4rem; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
 /* ---------- Top picks ---------- */
 
 .picks { list-style: none; margin: 0 -.6rem; padding: 0; }

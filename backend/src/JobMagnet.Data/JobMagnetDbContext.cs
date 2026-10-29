@@ -42,6 +42,7 @@ public class JobMagnetDbContext(DbContextOptions<JobMagnetDbContext> options) : 
             job.HasIndex(j => j.DedupeHash);
             job.HasIndex(j => j.IsActive);
             job.HasIndex(j => j.SubmittedByUserId);
+            job.HasIndex(j => new { j.Source, j.FirstSeenAt });
         });
 
         modelBuilder.Entity<Match>(match =>
