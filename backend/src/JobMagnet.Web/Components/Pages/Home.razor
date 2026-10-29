@@ -158,7 +158,12 @@
     {
         _storedView = await LoadStoredViewAsync();
         await LoadProfileStateAsync();
-        _ = RefreshLoopAsync(_cts.Token);
+
+        // The user may have left (e.g. redirected to sign-in) while the profile was loading.
+        if (!_cts.IsCancellationRequested)
+        {
+            _ = RefreshLoopAsync(_cts.Token);
+        }
     }
 
     // Runs on first load and again every time the query string changes.
@@ -383,9 +388,6 @@
         _selected = updated;
     }
 
-    public async ValueTask DisposeAsync()
-    {
-        await _cts.CancelAsync();
-        _cts.Dispose();
-    }
+    // Cancel only: disposing would break initialization code that may still be awaiting.
+    public async ValueTask DisposeAsync() => await _cts.CancelAsync();
 }

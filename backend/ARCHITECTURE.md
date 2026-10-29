@@ -85,7 +85,7 @@ All Claude calls go through `IClaudeJsonClient` (model `claude-opus-5-5`, low ef
 | `POST /auth/register`, `POST /auth/login` | – | Returns `{ token }` (a JWT, valid 30 days) |
 | `POST /cv` | ✓ | multipart `file`; returns the draft profile |
 | `GET /profile`, `PUT /profile` | ✓ | `PUT` body is the profile JSON and confirms it |
-| `GET /matches?minScore=50` | ✓ | Active, not-dismissed matches, best first (max 100) |
+| `GET /matches?minScore=50&page=1&pageSize=25&sort=score&dir=desc` | ✓ | Active, not-dismissed matches, one page at a time: `{ items, total, newCount, page, pageSize }`. `sort` is one of score, title, company, city, salary, source or added; jobs without a salary always sort last |
 | `PATCH /matches/{id}` | ✓ | `{ "status": "Interested" }` |
 | `POST /jobs` | ✓ | `{ "url"?, "text" }`: adds a pasted job, returns its match |
 
@@ -95,7 +95,7 @@ Authenticated endpoints need the header `Authorization: Bearer <token>`.
 
 Blazor Web App with interactive server rendering and **prerendering turned off**, because the session token lives in browser storage, which isn't reachable during a prerender.
 
-- `AuthSession` (one per circuit) keeps the JWT and stores it in `ProtectedLocalStorage`, which is encrypted with ASP.NET Data Protection, so a reload stays signed in. In Docker the keys live in the `webkeys` volume. If the keys are lost, users are simply signed out.
+- `AuthSession` (one per circuit) keeps the JWT and stores it in `ProtectedLocalStorage`, which is encrypted with ASP.NET Data Protection, so a reload stays signed in. In Docker the keys live in the `webkeys` volume (`DataProtection:KeysPath=/keys`). If the keys are lost, users are simply signed out.
 - `JobMagnetApiClient` wraps every API call and returns an `ApiResult<T>` instead of throwing. A 401 signs the user out, and `MainLayout` then redirects to `/login`.
 - `MainLayout` loads the session before rendering any page and sends signed-out users to `/login`.
 
@@ -105,7 +105,7 @@ Blazor Web App with interactive server rendering and **prerendering turned off**
 | `/cv` | Upload a PDF/DOCX; on success, goes to `/profile` |
 | `/add-job` | Paste a job (e.g. from LinkedIn); it's scored and opened in the orbit |
 | `/profile` | Edits the Claude-built profile; the first save confirms it and turns matching on |
-| `/` | The orbit: you in the center, matches as bubbles. A higher score puts the bubble closer and makes it bigger (`OrbitLayout`), and *Interested* pulls it further in. Clicking a bubble opens `JobDetails` and marks the match as seen. The page refreshes every minute; this stands in for push notifications |
+| `/` | Orbit or table, switched at the top and kept in the URL (`?view=table&page=2&size=50&sort=salary&dir=asc&minScore=60`), so any view can be bookmarked or shared. The table pages and sorts on the server. The orbit: you in the center, matches as bubbles. A higher score puts the bubble closer and makes it bigger (`OrbitLayout`), and *Interested* pulls it further in. Clicking a bubble opens `JobDetails` and marks the match as seen. The page refreshes every minute; this stands in for push notifications |
 
 ## Configuration
 
@@ -118,6 +118,7 @@ Blazor Web App with interactive server rendering and **prerendering turned off**
 | `Database:MigrateOnStartup` | api | `true` |
 | `Scrapers:*` | worker | 3 pages, 10s delay, every 2h, inactive after 3 days |
 | `Matching:*` | worker | 20 candidates, batches of 10, notify threshold 70 |
+| `DataProtection:KeysPath` | web | unset (local dev keeps keys in the user profile) |
 | `Api:BaseUrl` | web | `http://localhost:8080/` (dev: `:5034`) |
 | `Claude:Model`, `Claude:MaxTokens` | api, worker | `claude-opus-5-5`, 16000 |
 

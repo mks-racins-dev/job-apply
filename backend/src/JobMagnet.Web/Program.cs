@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.DataProtection;
+
 using JobMagnet.Web.Api;
 using JobMagnet.Web.Components;
 using JobMagnet.Web.Session;
@@ -14,6 +16,14 @@ public static class Program
             ?? throw new InvalidOperationException("Api:BaseUrl is not configured.");
 
         builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+
+        // Keys encrypt the stored session and antiforgery tokens; losing them on a redeploy signs everyone out.
+        var dataProtection = builder.Services.AddDataProtection().SetApplicationName("JobMagnet.Web");
+        if (builder.Configuration["DataProtection:KeysPath"] is { Length: > 0 } keysPath)
+        {
+            dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+        }
+
         builder.Services.AddScoped<AuthSession>();
         builder.Services.AddHttpClient<JobMagnetApiClient>(client => client.BaseAddress = new Uri(apiBaseUrl));
 

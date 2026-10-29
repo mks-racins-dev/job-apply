@@ -48,10 +48,11 @@ services:
       dockerfile: src/JobMagnet.Web/Dockerfile
     environment:
       Api__BaseUrl: http://api:8080/
+      DataProtection__KeysPath: /keys
     ports:
       - "8081:8080"
     volumes:
-      - webkeys:/home/app/.aspnet/DataProtection-Keys
+      - webkeys:/keys
     depends_on:
       api:
         condition: service_started
