@@ -15,9 +15,9 @@
 
     <dl>
         <dt>Salary</dt>
-        <dd>@Salary</dd>
+        <dd>@JobFormat.Salary(Match.Job)</dd>
         <dt>Source</dt>
-        <dd>@SourceLabel</dd>
+        <dd>@JobFormat.Source(Match.Job)</dd>
     </dl>
 
     @if (Match.MatchedSkills.Count > 0)
@@ -64,18 +64,4 @@
 
     [Parameter]
     public EventCallback<MatchStatus> OnStatus { get; set; }
-
-    private string SourceLabel => Match.Job.Source switch
-    {
-        "linkedin.com" => "LinkedIn (added by you)",
-        "manual" => "Added by you",
-        _ => Match.Job.Source
-    };
-
-    private string Salary => (Match.Job.SalaryMin, Match.Job.SalaryMax) switch
-    {
-        (null, null) => "Not stated",
-        ({ } min, { } max) when min != max => $"€{min:0} – €{max:0} / month",
-        _ => $"€{Match.Job.SalaryMin ?? Match.Job.SalaryMax:0} / month"
-    };
 }

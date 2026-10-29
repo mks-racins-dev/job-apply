@@ -2,6 +2,7 @@
 @implements IAsyncDisposable
 @inject JobMagnetApiClient Api
 @inject AuthSession Session
+@inject Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage.ProtectedLocalStorage Storage
 
 <PageTitle>Your orbit · Job Magnet</PageTitle>
 
@@ -39,8 +40,14 @@
             <div class="home-main">
                 <div class="toolbar">
                     <div>
-                        <h1>Your orbit</h1>
+                        <h1>@(_view == HomeView.Table ? "Your matches" : "Your orbit")</h1>
                         <p class="muted">@SummaryText</p>
+                    </div>
+                    <div class="view-switch" role="group" aria-label="View">
+                        <button class="@(_view == HomeView.Orbit ? "active" : null)" aria-pressed="@(_view == HomeView.Orbit)"
+                                @onclick="() => SetViewAsync(HomeView.Orbit)">◎ Orbit</button>
+                        <button class="@(_view == HomeView.Table ? "active" : null)" aria-pressed="@(_view == HomeView.Table)"
+                                @onclick="() => SetViewAsync(HomeView.Table)">☰ Table</button>
                     </div>
                     <label class="slider">
                         Min score <strong>@_minScore</strong>
@@ -54,6 +61,10 @@
                         <p>No matches above @_minScore yet.</p>
                         <p class="muted">The worker scrapes and scores new jobs every 2 hours. This page refreshes on its own.</p>
                     </div>
+                }
+                else if (_view == HomeView.Table)
+                {
+                    <JobTable Matches="_matches" SelectedId="_selected?.Id" OnSelect="SelectAsync" />
                 }
                 else
                 {
@@ -73,6 +84,7 @@
 @code {
     private const int DefaultMinScore = 50;
     private const int SliderStep = 10;
+    private const string ViewStorageKey = "jobmagnet.view";
 
     // Set by "Add job" so the new job is visible and opened, even when it scored low.
     [SupplyParameterFromQuery(Name = "match")]
@@ -86,8 +98,11 @@
 
     private enum HomeState { Loading, NeedsCv, NeedsConfirmation, Ready, Error }
 
+    private enum HomeView { Orbit, Table }
+
     private readonly CancellationTokenSource _cts = new();
     private HomeState _state = HomeState.Loading;
+    private HomeView _view = HomeView.Orbit;
     private List<MatchItem> _matches = [];
     private MatchItem? _selected;
     private int _minScore = DefaultMinScore;
@@ -109,6 +124,8 @@
         {
             _minScore = Math.Min(DefaultMinScore, focusScore / SliderStep * SliderStep);
         }
+
+        _view = await LoadViewAsync();
 
         await LoadAsync();
         if (FocusMatchId is { } focusId && _matches.FirstOrDefault(m => m.Id == focusId) is { } focused)
@@ -179,6 +196,32 @@
         catch (OperationCanceledException)
         {
             // Page closed.
+        }
+    }
+
+    private async Task SetViewAsync(HomeView view)
+    {
+        _view = view;
+        try
+        {
+            await Storage.SetAsync(ViewStorageKey, view.ToString());
+        }
+        catch (System.Security.Cryptography.CryptographicException)
+        {
+            // Only a preference; the view still switches for this visit.
+        }
+    }
+
+    private async Task<HomeView> LoadViewAsync()
+    {
+        try
+        {
+            var stored = await Storage.GetAsync<string>(ViewStorageKey);
+            return stored.Success && Enum.TryParse<HomeView>(stored.Value, out var view) ? view : HomeView.Orbit;
+        }
+        catch (System.Security.Cryptography.CryptographicException)
+        {
+            return HomeView.Orbit;
         }
     }
 

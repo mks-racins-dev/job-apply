@@ -212,6 +212,45 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .slider { flex-direction: row; align-items: center; gap: .5rem; margin: 0; font-weight: 400; }
 .empty { text-align: center; padding: 3rem 1.5rem; }
 
+/* View switch */
+.view-switch {
+    display: inline-flex;
+    padding: 3px;
+    gap: 2px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    margin-left: auto;
+}
+.view-switch button { border: 0; padding: .35rem .8rem; border-radius: 7px; color: var(--muted); background: none; }
+.view-switch button.active { background: var(--accent-soft); color: var(--accent); }
+
+/* Table */
+.table-wrap { padding: 0; overflow-x: auto; }
+table.jobs { width: 100%; border-collapse: collapse; }
+.jobs th, .jobs td { padding: .65rem .9rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.jobs th { font-size: .8rem; font-weight: 600; color: var(--muted); white-space: nowrap; background: var(--surface); position: sticky; top: 0; }
+.jobs th .sort { border: 0; background: none; padding: 0; font: inherit; color: inherit; }
+.jobs th .sort:hover { color: var(--text); }
+.sort-arrow { display: inline-block; width: .8em; color: var(--accent); }
+.jobs tbody tr { cursor: pointer; }
+.jobs tbody tr:hover { background: var(--bg); }
+.jobs tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.jobs tbody tr.selected { background: var(--accent-soft); }
+.jobs tbody tr:last-child td { border-bottom: 0; }
+.jobs .num { width: 4.5rem; text-align: center; }
+.jobs .nowrap { white-space: nowrap; }
+.jobs tr.is-new .job-title { font-weight: 600; }
+.jobs tr.is-new .job-title::before { content: "● "; color: var(--accent); font-size: .7em; vertical-align: middle; }
+.star { color: var(--ok); margin-left: .35rem; }
+.score { display: inline-block; min-width: 2.4rem; padding: .1rem .45rem; border-radius: 999px; font-weight: 700; font-size: .85rem; }
+.score-high { background: var(--ok-soft); color: var(--ok); }
+.score-mid { background: var(--accent-soft); color: var(--accent); }
+.score-low { background: var(--bg); color: var(--muted); }
+@media (max-width: 640px) {
+    .jobs .hide-sm { display: none; }
+}
+
 /* Orbit */
 .orbit {
     position: relative;
