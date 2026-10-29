@@ -30,6 +30,9 @@ public class Job
 
     public bool IsActive { get; set; } = true;
 
+    // Set for jobs a user pasted in themselves (e.g. from LinkedIn): only that user is matched against them.
+    public Guid? SubmittedByUserId { get; set; }
+
     // Content hash shared by the same listing posted on several sites.
     public required string DedupeHash { get; set; }
 }

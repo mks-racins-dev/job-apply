@@ -73,7 +73,7 @@
             return;
         }
 
-        _error = result.Error;
+        _error = result.StatusCode == StatusCodes.Status409Conflict ? "An account with this email already exists." : result.Error;
         _busy = false;
     }
 }

@@ -1,0 +1,70 @@
+@page "/add-job"
+@inject JobMagnetApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>Add a job · Job Magnet</PageTitle>
+
+<section class="card add-job">
+    <h1>Add a job from LinkedIn</h1>
+    <p class="muted">
+        Found something on LinkedIn (or anywhere else)? Open the posting, select all the text (Ctrl+A), copy it,
+        and paste it below. We'll pull out the details and score it against your profile.
+    </p>
+
+    <label>
+        Link to the posting <span class="muted">(optional)</span>
+        <input type="url" placeholder="https://www.linkedin.com/jobs/view/…" @bind="_url" disabled="@_busy" />
+    </label>
+
+    <label>
+        Posting text
+        <textarea rows="14" placeholder="Paste the whole job posting here…" @bind="_text" @bind:event="oninput" disabled="@_busy"></textarea>
+        <span class="muted hint">@_text.Length characters</span>
+    </label>
+
+    @if (_error is not null)
+    {
+        <p class="error">@_error</p>
+    }
+
+    <div class="actions">
+        <a class="button" href="/">Cancel</a>
+        <button class="primary" @onclick="SubmitAsync" disabled="@(_busy || _text.Trim().Length < MinLength)">
+            @if (_busy)
+            {
+                <span class="spinner small"></span>
+                <span>Reading and scoring…</span>
+            }
+            else
+            {
+                <span>Add & score</span>
+            }
+        </button>
+    </div>
+</section>
+
+@code {
+    private const int MinLength = 50;
+
+    private string? _url;
+    private string _text = string.Empty;
+    private bool _busy;
+    private string? _error;
+
+    private async Task SubmitAsync()
+    {
+        _busy = true;
+        _error = null;
+
+        var result = await Api.SubmitJobAsync(new SubmitJobRequest(_url, _text), CancellationToken.None);
+        if (result is { IsSuccess: true, Value: { } match })
+        {
+            // Open the orbit on the new job, even if it scored below the default minimum.
+            Navigation.NavigateTo($"/?match={match.Id}&minScore={match.Score}");
+            return;
+        }
+
+        _error = result.Error;
+        _busy = false;
+    }
+}

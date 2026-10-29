@@ -45,13 +45,21 @@ public static class MatchEndpoints
             .OrderByDescending(m => m.Score)
             .ThenByDescending(m => m.CreatedAt)
             .Take(MaxResults)
-            .Select(m => new MatchResponse(
-                m.Id, m.Score, m.Reason, m.MatchedSkills, m.MissingSkills, m.Status, m.CreatedAt,
-                new JobResponse(m.Job!.Id, m.Job.Title, m.Job.Company, m.Job.City, m.Job.SalaryMin, m.Job.SalaryMax, m.Job.Source, m.Job.Url)))
+            .Select(ToResponse)
             .ToListAsync();
 
         return Results.Ok(matches);
     }
+
+    public static async Task<MatchResponse?> GetAsync(JobMagnetDbContext db, Guid userId, Guid matchId) =>
+        await db.Matches.AsNoTracking()
+            .Where(m => m.Id == matchId && m.UserId == userId)
+            .Select(ToResponse)
+            .SingleOrDefaultAsync();
+
+    private static readonly System.Linq.Expressions.Expression<Func<Match, MatchResponse>> ToResponse = m => new MatchResponse(
+        m.Id, m.Score, m.Reason, m.MatchedSkills, m.MissingSkills, m.Status, m.CreatedAt,
+        new JobResponse(m.Job!.Id, m.Job.Title, m.Job.Company, m.Job.City, m.Job.SalaryMin, m.Job.SalaryMax, m.Job.Source, m.Job.Url));
 
     private static async Task<IResult> UpdateStatusAsync(Guid id, StatusUpdate update, ClaimsPrincipal principal, JobMagnetDbContext db)
     {

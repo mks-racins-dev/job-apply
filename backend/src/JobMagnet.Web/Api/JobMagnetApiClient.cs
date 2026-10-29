@@ -44,6 +44,9 @@ public class JobMagnetApiClient(HttpClient http, AuthSession session)
     public Task<ApiResult<List<MatchItem>>> GetMatchesAsync(int minScore) =>
         SendAsync<List<MatchItem>>(HttpMethod.Get, $"matches?minScore={minScore}");
 
+    public Task<ApiResult<MatchItem>> SubmitJobAsync(SubmitJobRequest request, CancellationToken cancellationToken) =>
+        SendAsync<MatchItem>(HttpMethod.Post, "jobs", JsonContent.Create(request, options: JsonOptions), cancellationToken);
+
     public Task<ApiResult<object>> UpdateMatchStatusAsync(Guid matchId, MatchStatus status) =>
         SendAsync<object>(HttpMethod.Patch, $"matches/{matchId}", JsonContent.Create(new StatusUpdate(status), options: JsonOptions));
 
@@ -96,7 +99,6 @@ public class JobMagnetApiClient(HttpClient http, AuthSession session)
         var message = response.StatusCode switch
         {
             HttpStatusCode.Unauthorized => "Wrong email or password, or your session expired.",
-            HttpStatusCode.Conflict => "An account with this email already exists.",
             HttpStatusCode.NotFound => "Not found.",
             _ => TryReadMessage(body)
         };

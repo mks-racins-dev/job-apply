@@ -17,7 +17,7 @@
         <dt>Salary</dt>
         <dd>@Salary</dd>
         <dt>Source</dt>
-        <dd>@Match.Job.Source</dd>
+        <dd>@SourceLabel</dd>
     </dl>
 
     @if (Match.MatchedSkills.Count > 0)
@@ -48,7 +48,10 @@
             @(Match.Status == MatchStatus.Interested ? "★ Interested" : "☆ Interested")
         </button>
         <button @onclick="() => OnStatus.InvokeAsync(MatchStatus.Dismissed)">Dismiss</button>
-        <a class="button primary" href="@Match.Job.Url" target="_blank" rel="noopener">Open original ↗</a>
+        @if (!string.IsNullOrEmpty(Match.Job.Url))
+        {
+            <a class="button primary" href="@Match.Job.Url" target="_blank" rel="noopener">Open original ↗</a>
+        }
     </div>
 </aside>
 
@@ -61,6 +64,13 @@
 
     [Parameter]
     public EventCallback<MatchStatus> OnStatus { get; set; }
+
+    private string SourceLabel => Match.Job.Source switch
+    {
+        "linkedin.com" => "LinkedIn (added by you)",
+        "manual" => "Added by you",
+        _ => Match.Job.Source
+    };
 
     private string Salary => (Match.Job.SalaryMin, Match.Job.SalaryMax) switch
     {

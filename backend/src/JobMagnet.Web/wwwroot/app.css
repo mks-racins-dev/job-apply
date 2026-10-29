@@ -188,6 +188,23 @@ form > .primary, section > form .primary[type=submit] { width: 100%; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* Add job */
+.add-job { max-width: 760px; margin: 0 auto; }
+textarea {
+    font: inherit;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .65rem .75rem;
+    width: 100%;
+    resize: vertical;
+    min-height: 220px;
+}
+textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hint { font-size: .8rem; font-weight: 400; text-align: right; }
+.spinner.small { width: 16px; height: 16px; border-width: 2px; border-color: rgb(255 255 255 / 35%); border-top-color: #fff; }
+
 /* Home */
 .home { display: flex; gap: 1.5rem; align-items: flex-start; }
 .home-main { flex: 1; min-width: 0; }

@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using JobMagnet.Matching.Profiles;
 using JobMagnet.Matching.Scoring;
+using JobMagnet.Matching.Submitted;
 
 namespace JobMagnet.Matching;
 
@@ -20,6 +21,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CvProfileExtractor>();
         services.AddScoped<JobScorer>();
         services.AddScoped<MatchingService>();
+        services.AddScoped<JobPostingExtractor>();
+        services.AddScoped<SubmittedJobService>();
         return services;
     }
 }

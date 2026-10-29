@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 
 using JobMagnet.Api.Auth;
 using JobMagnet.Api.Cv;
+using JobMagnet.Api.Jobs;
 using JobMagnet.Api.Matches;
 using JobMagnet.Data;
 using JobMagnet.Data.Entities;
@@ -45,6 +46,7 @@ public static class Program
         app.MapAuthEndpoints();
         app.MapCvEndpoints();
         app.MapMatchEndpoints();
+        app.MapSubmittedJobEndpoints();
 
         await app.RunAsync();
     }

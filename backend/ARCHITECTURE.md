@@ -53,6 +53,18 @@ After all sources run, it deactivates jobs older than `InactiveAfter`. A failing
 
 `POST /cv` takes a PDF or DOCX of up to 10 MB. PdfPig or OpenXML extracts the text, then `CvProfileExtractor` sends it to Claude with a JSON schema (structured outputs), so the reply is always valid profile JSON. The profile is saved unconfirmed. `PUT /profile` stores the user's edited version and marks it confirmed. **Only confirmed profiles get matched.**
 
+## Jobs pasted in by the user (LinkedIn)
+
+LinkedIn forbids scraping, so users bring those jobs in themselves: on `/add-job` they paste a posting's text, plus an optional link.
+
+`POST /jobs` → `SubmittedJobService`:
+1. Validates the link (only `http`/`https`, tracking query removed) and requires a confirmed profile.
+2. If this user already pasted the same link (or, with no link, the same text), returns that match and un-dismisses it if needed.
+3. `JobPostingExtractor` (Claude) pulls title, company, city, monthly salary and a clean description out of the page noise.
+4. Scores the job right away with `JobScorer` and saves the `Job` plus a `Match`. The web app then opens the orbit focused on it.
+
+Pasted jobs have `Job.SubmittedByUserId` set. They are **private to that user**: the worker never matches them for anyone else, never deactivates them, and they never count as a cross-site duplicate of a scraped listing. Source is `linkedin.com` for LinkedIn links, `manual` otherwise.
+
 ## Matching (cost control)
 
 For each confirmed profile, `MatchingService`:
@@ -75,6 +87,7 @@ All Claude calls go through `IClaudeJsonClient` (model `claude-opus-5-5`, low ef
 | `GET /profile`, `PUT /profile` | ✓ | `PUT` body is the profile JSON and confirms it |
 | `GET /matches?minScore=50` | ✓ | Active, not-dismissed matches, best first (max 100) |
 | `PATCH /matches/{id}` | ✓ | `{ "status": "Interested" }` |
+| `POST /jobs` | ✓ | `{ "url"?, "text" }`: adds a pasted job, returns its match |
 
 Authenticated endpoints need the header `Authorization: Bearer <token>`.
 
@@ -90,6 +103,7 @@ Blazor Web App with interactive server rendering and **prerendering turned off**
 |---|---|
 | `/login` | Sign in or register |
 | `/cv` | Upload a PDF/DOCX; on success, goes to `/profile` |
+| `/add-job` | Paste a job (e.g. from LinkedIn); it's scored and opened in the orbit |
 | `/profile` | Edits the Claude-built profile; the first save confirms it and turns matching on |
 | `/` | The orbit: you in the center, matches as bubbles. A higher score puts the bubble closer and makes it bigger (`OrbitLayout`), and *Interested* pulls it further in. Clicking a bubble opens `JobDetails` and marks the match as seen. The page refreshes every minute; this stands in for push notifications |
 

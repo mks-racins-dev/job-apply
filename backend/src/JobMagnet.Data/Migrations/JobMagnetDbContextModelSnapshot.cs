@@ -102,6 +102,9 @@ namespace JobMagnet.Data.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<Guid?>("SubmittedByUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
@@ -115,6 +118,8 @@ namespace JobMagnet.Data.Migrations
                     b.HasIndex("DedupeHash");
 
                     b.HasIndex("IsActive");
+
+                    b.HasIndex("SubmittedByUserId");
 
                     b.HasIndex("Source", "ExternalId")
                         .IsUnique();

@@ -36,7 +36,7 @@ public class MatchingService(
         var settings = options.Value;
         var alreadyMatched = db.Matches.Where(m => m.UserId == profile.UserId).Select(m => m.JobId);
         var unmatchedJobs = await db.Jobs.AsNoTracking()
-            .Where(j => j.IsActive && !alreadyMatched.Contains(j.Id))
+            .Where(j => j.IsActive && j.SubmittedByUserId == null && !alreadyMatched.Contains(j.Id))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 

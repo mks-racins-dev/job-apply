@@ -72,6 +72,14 @@
 
 @code {
     private const int DefaultMinScore = 50;
+    private const int SliderStep = 10;
+
+    // Set by "Add job" so the new job is visible and opened, even when it scored low.
+    [SupplyParameterFromQuery(Name = "match")]
+    public Guid? FocusMatchId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "minScore")]
+    public int? FocusMinScore { get; set; }
 
     // Stands in for push notifications on the web: new matches drift in without a reload.
     private static readonly TimeSpan RefreshInterval = TimeSpan.FromMinutes(1);
@@ -97,7 +105,17 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (FocusMinScore is { } focusScore)
+        {
+            _minScore = Math.Min(DefaultMinScore, focusScore / SliderStep * SliderStep);
+        }
+
         await LoadAsync();
+        if (FocusMatchId is { } focusId && _matches.FirstOrDefault(m => m.Id == focusId) is { } focused)
+        {
+            await SelectAsync(focused);
+        }
+
         _ = RefreshLoopAsync(_cts.Token);
     }
 
