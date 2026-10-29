@@ -44,6 +44,7 @@ public static class Program
 
         app.MapHealthChecks("/health");
         app.MapAuthEndpoints();
+        app.MapAccountEndpoints();
         app.MapCvEndpoints();
         app.MapMatchEndpoints();
         app.MapSubmittedJobEndpoints();

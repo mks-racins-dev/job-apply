@@ -1,24 +1,22 @@
 ﻿@inherits LayoutComponentBase
 @implements IDisposable
 @inject AuthSession Session
+@inject JobMagnetApiClient Api
 @inject NavigationManager Navigation
 
 @if (_loaded)
 {
     <header class="topbar">
-        <a class="brand" href="/">Job Magnet</a>
+        <a class="wordmark" href="/" aria-label="Job Magnet home">
+            <span class="wordmark-glyph" aria-hidden="true"></span>Job Magnet
+        </a>
         @if (Session.IsSignedIn)
         {
-            <nav>
-                <NavLink href="/" Match="NavLinkMatch.All">Orbit</NavLink>
-                <NavLink href="/add-job">Add job</NavLink>
-                <NavLink href="/profile">Profile</NavLink>
-                <NavLink href="/cv">CV</NavLink>
+            <nav class="topnav" aria-label="Main">
+                <NavLink href="/" Match="NavLinkMatch.All">Matches</NavLink>
+                <NavLink href="/add-job">Add a job</NavLink>
             </nav>
-            <div class="account">
-                <span class="muted">@Session.Email</span>
-                <button class="link" @onclick="SignOutAsync">Sign out</button>
-            </div>
+            <AccountMenu />
         }
     </header>
 
@@ -28,7 +26,7 @@
 }
 
 <div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
+    Something went wrong.
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
@@ -37,6 +35,7 @@
     private const string LoginPath = "login";
 
     private bool _loaded;
+    private bool _accountLoaded;
 
     protected override async Task OnInitializedAsync()
     {
@@ -48,16 +47,42 @@
         }
 
         await Session.LoadAsync();
+        await LoadAccountAsync();
         _loaded = true;
         Session.Changed += OnSessionChanged;
         Navigation.LocationChanged += OnLocationChanged;
         RedirectIfSignedOut();
     }
 
+    // The avatar lives on the server so it follows the user across devices.
+    private async Task LoadAccountAsync()
+    {
+        if (!Session.IsSignedIn || _accountLoaded)
+        {
+            return;
+        }
+
+        _accountLoaded = true;
+        var account = await Api.GetAccountAsync();
+        if (account is { IsSuccess: true, Value: { } info })
+        {
+            Session.SetAvatar(info.AvatarId);
+        }
+    }
+
     private void OnSessionChanged()
     {
+        if (!Session.IsSignedIn)
+        {
+            _accountLoaded = false;
+        }
+
         RedirectIfSignedOut();
-        InvokeAsync(StateHasChanged);
+        InvokeAsync(async () =>
+        {
+            await LoadAccountAsync();
+            StateHasChanged();
+        });
     }
 
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e) => RedirectIfSignedOut();
@@ -70,8 +95,6 @@
             Navigation.NavigateTo(LoginPath);
         }
     }
-
-    private async Task SignOutAsync() => await Session.SignOutAsync();
 
     public void Dispose()
     {

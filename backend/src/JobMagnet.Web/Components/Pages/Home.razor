@@ -5,7 +5,7 @@
 @inject Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage.ProtectedLocalStorage Storage
 @inject NavigationManager Navigation
 
-<PageTitle>@(_view == HomeView.Table ? "Your matches" : "Your orbit") · Job Magnet</PageTitle>
+<PageTitle>@(_view == HomeView.Table ? "Matches" : "Your orbit") · Job Magnet</PageTitle>
 
 @switch (_state)
 {
@@ -16,7 +16,7 @@
     case HomeState.NeedsCv:
         <section class="card narrow">
             <h1>Let's get jobs coming to you</h1>
-            <p class="muted">Upload your CV once. We build a profile, and matching jobs from visidarbi.lv, cv.lv and ss.lv start orbiting you.</p>
+            <p class="muted">Upload your CV once. We turn it into a profile and score new listings from visidarbi.lv, cv.lv and ss.lv against it.</p>
             <a class="button primary" href="/cv">Upload CV</a>
         </section>
         break;
@@ -37,33 +37,48 @@
         break;
 
     default:
-        <div class="home">
-            <div class="home-main">
+        <div class="home @(_view == HomeView.Table && _selected is null ? "home-wide" : null)">
+            <aside class="home-side">
+                @if (_profile is not null)
+                {
+                    <CandidateRecord Profile="_profile" AvatarId="Session.AvatarId" />
+                }
+                <PipelineStatus Total="_total" New="_newCount" Interested="_interestedCount" MinScore="_minScore" />
+            </aside>
+
+            <section class="home-main panel" aria-labelledby="matches-title">
                 <div class="toolbar">
-                    <div>
-                        <h1>@(_view == HomeView.Table ? "Your matches" : "Your orbit")</h1>
+                    <div class="toolbar-title">
+                        <h1 id="matches-title">@(_view == HomeView.Table ? "Matches" : "Your orbit")</h1>
                         <p class="muted">@SummaryText</p>
                     </div>
-                    <div class="view-switch" role="group" aria-label="View">
-                        <button class="@(_view == HomeView.Orbit ? "active" : null)" aria-pressed="@(_view == HomeView.Orbit)"
-                                @onclick="() => SetViewAsync(HomeView.Orbit)">◎ Orbit</button>
-                        <button class="@(_view == HomeView.Table ? "active" : null)" aria-pressed="@(_view == HomeView.Table)"
-                                @onclick="() => SetViewAsync(HomeView.Table)">☰ Table</button>
+                    <div class="toolbar-controls">
+                        <div class="segmented" role="group" aria-label="View">
+                            <button class="@(_view == HomeView.Orbit ? "active" : null)" aria-pressed="@(_view == HomeView.Orbit ? "true" : "false")"
+                                    @onclick="() => SetViewAsync(HomeView.Orbit)">Orbit</button>
+                            <button class="@(_view == HomeView.Table ? "active" : null)" aria-pressed="@(_view == HomeView.Table ? "true" : "false")"
+                                    @onclick="() => SetViewAsync(HomeView.Table)">Table</button>
+                        </div>
+                        <label class="slider">
+                            <span>Min score</span>
+                            <input type="range" min="0" max="90" step="10" value="@_minScore" @onchange="OnMinScoreChanged" />
+                            <output>@_minScore</output>
+                        </label>
                     </div>
-                    <label class="slider">
-                        Min score <strong>@_minScore</strong>
-                        <input type="range" min="0" max="90" step="10" value="@_minScore" @onchange="OnMinScoreChanged" />
-                    </label>
                 </div>
 
                 @if (_matches.Count == 0)
                 {
-                    <div class="empty card">
-                        <p>@(_page > 1 ? $"Page {_page} is empty." : $"No matches above {_minScore} yet.")</p>
-                        <p class="muted">The worker scrapes and scores new jobs every 2 hours. This page refreshes on its own.</p>
+                    <div class="empty">
+                        <p class="empty-title">@EmptyTitle</p>
+                        <p class="muted">New listings are scraped every two hours and scored within minutes. This page refreshes itself.</p>
                         @if (_page > 1)
                         {
-                            <button @onclick="() => OnPage(1)">Go to page 1</button>
+                            <button @onclick="() => OnPage(1)">Back to page 1</button>
+                        }
+                        else if (_minScore > 0)
+                        {
+                            <button @onclick="ShowAllScores">Show every match</button>
                         }
                     </div>
                 }
@@ -76,14 +91,48 @@
                 else
                 {
                     <JobOrbit Matches="_matches" MinScore="_minScore" SelectedId="_selected?.Id"
-                              Email="@Session.Email" OnSelect="SelectAsync" />
+                              AvatarId="Session.AvatarId" OnSelect="SelectAsync" />
                 }
-            </div>
+            </section>
 
-            @if (_selected is not null)
-            {
-                <JobDetails Match="_selected" OnClose="() => _selected = null" OnStatus="SetStatusAsync" />
-            }
+            <aside class="home-detail">
+                @if (_view == HomeView.Table && _selected is null)
+                {
+                    // The table already lists every match; the picks panel would only squeeze it.
+                }
+                else if (_selected is not null)
+                {
+                    <JobDetails Match="_selected" OnClose="() => _selected = null" OnStatus="SetStatusAsync" />
+                }
+                else
+                {
+                    <section class="panel" aria-labelledby="picks-title">
+                        <div class="panel-head">
+                            <h2 id="picks-title">Strongest right now</h2>
+                            <span class="panel-meta">top @TopPicks.Count</span>
+                        </div>
+                        @if (TopPicks.Count == 0)
+                        {
+                            <p class="panel-note">Your best matches will show up here.</p>
+                        }
+                        else
+                        {
+                            <ol class="picks">
+                                @foreach (var pick in TopPicks)
+                                {
+                                    <li>
+                                        <button class="pick" @onclick="() => SelectAsync(pick)">
+                                            <span class="pick-title">@pick.Job.Title</span>
+                                            <span class="pick-score">@pick.Score</span>
+                                            <span class="pick-meta">@PickMeta(pick)</span>
+                                        </button>
+                                    </li>
+                                }
+                            </ol>
+                        }
+                    </section>
+                }
+            </aside>
         </div>
         break;
 }
@@ -91,8 +140,9 @@
 @code {
     private const int DefaultMinScore = 50;
     private const int MaxScore = 100;
+    private const int TopPickCount = 5;
     private const int DefaultPageSize = 25;
-    private const int OrbitSize = 100;
+    private const int OrbitSize = OrbitLayout.MaxBubbles;
     private const string ViewStorageKey = "jobmagnet.view";
     private const string TableViewValue = "table";
     private const string OrbitViewValue = "orbit";
@@ -143,19 +193,35 @@
     private bool _descending = true;
     private int _total;
     private int _newCount;
+    private int _interestedCount;
+    private ProfileData? _profile;
     private string? _error;
+
+    private List<MatchItem> TopPicks => _matches.OrderByDescending(m => m.Score).Take(TopPickCount).ToList();
+
+    private string EmptyTitle => _page > 1 ? $"Page {_page} is empty." : $"No matches scoring {_minScore} or more yet.";
+
+    private static string PickMeta(MatchItem pick)
+    {
+        var who = pick.Job.Company ?? JobFormat.Source(pick.Job);
+        return pick.Job.City is null ? who : $"{who} · {pick.Job.City}";
+    }
+
+    private void ShowAllScores() => UpdateQuery(minScore: 0, page: 1);
 
     private string SummaryText
     {
         get
         {
-            var total = $"{_total} job{(_total == 1 ? "" : "s")} pulled in";
+            var jobs = $"{_total} job{(_total == 1 ? "" : "s")} scoring {_minScore}+";
+            var total = _view == HomeView.Orbit && _total > _matches.Count ? $"Top {_matches.Count} of {jobs}" : jobs;
             return _newCount > 0 ? $"{total} · {_newCount} new" : total;
         }
     }
 
     protected override async Task OnInitializedAsync()
     {
+        Session.Changed += OnSessionChanged;
         _storedView = await LoadStoredViewAsync();
         await LoadProfileStateAsync();
 
@@ -222,6 +288,7 @@
             return;
         }
 
+        _profile = response.Data;
         _state = response.IsConfirmed ? HomeState.Ready : HomeState.NeedsConfirmation;
     }
 
@@ -253,6 +320,7 @@
         _matches = page.Items;
         _total = page.Total;
         _newCount = page.NewCount;
+        _interestedCount = page.InterestedCount;
         _selected = _selected is null ? null : _matches.FirstOrDefault(m => m.Id == _selected.Id);
         _state = HomeState.Ready;
     }
@@ -375,6 +443,16 @@
             _newCount = Math.Max(_newCount - 1, 0);
         }
 
+        if (match.Status == MatchStatus.Interested)
+        {
+            _interestedCount = Math.Max(_interestedCount - 1, 0);
+        }
+
+        if (target == MatchStatus.Interested)
+        {
+            _interestedCount++;
+        }
+
         if (target == MatchStatus.Dismissed)
         {
             _matches.Remove(match);
@@ -388,6 +466,13 @@
         _selected = updated;
     }
 
+    // The avatar can change from the account menu while this page is open.
+    private void OnSessionChanged() => InvokeAsync(StateHasChanged);
+
     // Cancel only: disposing would break initialization code that may still be awaiting.
-    public async ValueTask DisposeAsync() => await _cts.CancelAsync();
+    public async ValueTask DisposeAsync()
+    {
+        Session.Changed -= OnSessionChanged;
+        await _cts.CancelAsync();
+    }
 }

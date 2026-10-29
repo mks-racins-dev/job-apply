@@ -6,22 +6,23 @@ namespace JobMagnet.Tests.Web;
 public class OrbitLayoutTests
 {
     private const int MinScore = 50;
+    private const int Count = 10;
 
     [Fact]
     public void HigherScore_IsCloserAndBigger()
     {
-        var strong = OrbitLayout.Place(CreateMatch(95, MatchStatus.Seen), 0, MinScore);
-        var weak = OrbitLayout.Place(CreateMatch(55, MatchStatus.Seen), 0, MinScore);
+        var strong = OrbitLayout.Place(CreateMatch(95, MatchStatus.Seen), 0, Count, MinScore);
+        var weak = OrbitLayout.Place(CreateMatch(55, MatchStatus.Seen), Count - 1, Count, MinScore);
 
         Assert.True(DistanceFromCenter(strong) < DistanceFromCenter(weak));
-        Assert.True(strong.SizePx > weak.SizePx);
+        Assert.True(strong.SizePercent > weak.SizePercent);
     }
 
     [Fact]
     public void Interested_IsPulledCloser()
     {
-        var seen = OrbitLayout.Place(CreateMatch(70, MatchStatus.Seen), 3, MinScore);
-        var interested = OrbitLayout.Place(CreateMatch(70, MatchStatus.Interested), 3, MinScore);
+        var seen = OrbitLayout.Place(CreateMatch(70, MatchStatus.Seen), 3, Count, MinScore);
+        var interested = OrbitLayout.Place(CreateMatch(70, MatchStatus.Interested), 3, Count, MinScore);
 
         Assert.True(DistanceFromCenter(interested) < DistanceFromCenter(seen));
     }
@@ -34,7 +35,7 @@ public class OrbitLayoutTests
     {
         for (var i = 0; i < 30; i++)
         {
-            var place = OrbitLayout.Place(CreateMatch(score, MatchStatus.New), i, MinScore);
+            var place = OrbitLayout.Place(CreateMatch(score, MatchStatus.New), i, 30, MinScore);
 
             Assert.InRange(place.LeftPercent, 0, 100);
             Assert.InRange(place.TopPercent, 0, 100);

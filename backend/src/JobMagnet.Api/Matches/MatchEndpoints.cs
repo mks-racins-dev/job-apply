@@ -29,7 +29,7 @@ public static class MatchEndpoints
 
     public record StatusUpdate(MatchStatus Status);
 
-    public record MatchPage(IReadOnlyList<MatchResponse> Items, int Total, int NewCount, int Page, int PageSize);
+    public record MatchPage(IReadOnlyList<MatchResponse> Items, int Total, int NewCount, int InterestedCount, int Page, int PageSize);
 
     public static void MapMatchEndpoints(this IEndpointRouteBuilder app)
     {
@@ -51,13 +51,14 @@ public static class MatchEndpoints
 
         var total = await visible.CountAsync();
         var newCount = await visible.CountAsync(m => m.Status == MatchStatus.New);
+        var interestedCount = await visible.CountAsync(m => m.Status == MatchStatus.Interested);
         var items = await MatchSorting.Apply(visible, sort, dir)
             .Skip((pageNumber - 1) * size)
             .Take(size)
             .Select(ToResponse)
             .ToListAsync();
 
-        return Results.Ok(new MatchPage(items, total, newCount, pageNumber, size));
+        return Results.Ok(new MatchPage(items, total, newCount, interestedCount, pageNumber, size));
     }
 
     public static async Task<MatchResponse?> GetAsync(JobMagnetDbContext db, Guid userId, Guid matchId) =>

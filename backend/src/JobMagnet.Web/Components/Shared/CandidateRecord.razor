@@ -1,0 +1,78 @@
+<section class="panel profile-card" aria-labelledby="profile-card-title">
+    <div class="profile-card-head">
+        <span class="avatar-tile"><PixelAvatar AvatarId="AvatarId" Size="56" /></span>
+        <div class="profile-card-id">
+            <h2 id="profile-card-title">@(string.IsNullOrWhiteSpace(Profile.Headline) ? "Your profile" : Profile.Headline)</h2>
+            <p class="muted">@Capitalize(Profile.Seniority) · @Years</p>
+        </div>
+    </div>
+
+    <dl class="list-rows">
+        <div>
+            <dt>Based in</dt>
+            <dd>@(string.IsNullOrWhiteSpace(Profile.Location) ? "Not set" : Profile.Location)</dd>
+        </div>
+        <div>
+            <dt>Languages</dt>
+            <dd>@(Profile.Languages.Count == 0 ? "Not set" : string.Join(", ", Profile.Languages.Select(l => l.ToUpperInvariant())))</dd>
+        </div>
+        <div>
+            <dt>Looking in</dt>
+            <dd>@Looking</dd>
+        </div>
+        <div>
+            <dt>Salary from</dt>
+            <dd>@(Profile.Preferences.SalaryMin is { } min ? $"€{min:0} / mo" : "Open")</dd>
+        </div>
+    </dl>
+
+    @if (Profile.Skills.Count > 0)
+    {
+        <div class="chips">
+            @foreach (var skill in Profile.Skills.Take(MaxSkills))
+            {
+                <span class="chip">@skill</span>
+            }
+            @if (Profile.Skills.Count > MaxSkills)
+            {
+                <span class="chip chip-quiet">+@(Profile.Skills.Count - MaxSkills)</span>
+            }
+        </div>
+    }
+
+    <a class="text-link" href="/profile">Edit profile</a>
+</section>
+
+@code {
+    private const int MaxSkills = 8;
+
+    [Parameter, EditorRequired]
+    public ProfileData Profile { get; set; } = new();
+
+    [Parameter]
+    public int AvatarId { get; set; }
+
+    private string Years => Profile.YearsOfExperience switch
+    {
+        <= 0 => "New to work",
+        1 => "1 year of experience",
+        var years => $"{years:0.#} years of experience"
+    };
+
+    private string Looking
+    {
+        get
+        {
+            var places = Profile.Preferences.Cities.ToList();
+            if (Profile.Preferences.Remote)
+            {
+                places.Add("Remote");
+            }
+
+            return places.Count == 0 ? "Anywhere" : string.Join(", ", places);
+        }
+    }
+
+    private static string Capitalize(string value) =>
+        string.IsNullOrEmpty(value) ? value : char.ToUpperInvariant(value[0]) + value[1..];
+}

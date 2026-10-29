@@ -1,8 +1,8 @@
-<aside class="details card">
-    <button class="close link" aria-label="Close" @onclick="OnClose">×</button>
+<section class="panel details" aria-labelledby="detail-title">
+    <button class="detail-close" aria-label="Close details" @onclick="OnClose">×</button>
 
-    <div class="score-pill">@Match.Score<small>/100</small></div>
-    <h2>@Match.Job.Title</h2>
+    <div class="detail-score"><span>@Match.Score</span><small>/ 100 match</small></div>
+    <h2 id="detail-title" class="detail-title">@Match.Job.Title</h2>
     <p class="muted">
         @(Match.Job.Company ?? "Company not stated")
         @if (Match.Job.City is not null)
@@ -53,7 +53,7 @@
             <a class="button primary" href="@Match.Job.Url" target="_blank" rel="noopener">Open original ↗</a>
         }
     </div>
-</aside>
+</section>
 
 @code {
     [Parameter, EditorRequired]

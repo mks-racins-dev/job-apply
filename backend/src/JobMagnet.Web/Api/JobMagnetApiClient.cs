@@ -25,6 +25,11 @@ public class JobMagnetApiClient(HttpClient http, AuthSession session)
     public Task<ApiResult<TokenResponse>> LoginAsync(Credentials credentials) =>
         SendAsync<TokenResponse>(HttpMethod.Post, "auth/login", JsonContent.Create(credentials, options: JsonOptions));
 
+    public Task<ApiResult<AccountInfo>> GetAccountAsync() => SendAsync<AccountInfo>(HttpMethod.Get, "me");
+
+    public Task<ApiResult<object>> SetAvatarAsync(int avatarId) =>
+        SendAsync<object>(HttpMethod.Put, "me/avatar", JsonContent.Create(new AvatarUpdate(avatarId), options: JsonOptions));
+
     public Task<ApiResult<ProfileResponse>> GetProfileAsync() => SendAsync<ProfileResponse>(HttpMethod.Get, "profile");
 
     public Task<ApiResult<ProfileResponse>> SaveProfileAsync(ProfileData profile) =>

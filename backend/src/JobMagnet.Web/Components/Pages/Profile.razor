@@ -1,6 +1,8 @@
 @page "/profile"
+@implements IDisposable
 @inject JobMagnetApiClient Api
 @inject NavigationManager Navigation
+@inject AuthSession Session
 
 <PageTitle>Profile · Job Magnet</PageTitle>
 
@@ -18,73 +20,87 @@ else if (_profile is null)
 }
 else
 {
-    <section class="card">
-        <div class="card-head">
-            <h1>Review your profile</h1>
-            @if (_isConfirmed)
-            {
-                <span class="badge ok">Matching on</span>
-            }
-            else
-            {
-                <span class="badge warn">Not confirmed</span>
-            }
-        </div>
-        <p class="muted">This is what we match jobs against. Fix anything we got wrong, then save to start matching.</p>
-
-        <EditForm Model="_profile" FormName="profile" class="grid">
-            <label class="span-2">
-                Headline
-                <InputText @bind-Value="_profile.Headline" />
-            </label>
-
-            <TagInput Label="Roles" @bind-Values="_profile.Roles" Placeholder="e.g. Backend developer" />
-            <TagInput Label="Skills" @bind-Values="_profile.Skills" Placeholder="e.g. C#" />
-
-            <label>
-                Seniority
-                <InputSelect @bind-Value="_profile.Seniority">
-                    @foreach (var level in SeniorityLevels)
-                    {
-                        <option value="@level">@level</option>
-                    }
-                </InputSelect>
-            </label>
-            <label>
-                Years of experience
-                <InputNumber @bind-Value="_profile.YearsOfExperience" min="0" step="0.5" />
-            </label>
-
-            <TagInput Label="Languages" @bind-Values="_profile.Languages" Placeholder="lv, en, ru" />
-            <label>
-                Location
-                <InputText @bind-Value="_profile.Location" />
-            </label>
-
-            <TagInput Label="Preferred cities" @bind-Values="_profile.Preferences.Cities" Placeholder="e.g. Rīga" />
-            <label>
-                Minimum salary (EUR / month, gross)
-                <InputNumber @bind-Value="_profile.Preferences.SalaryMin" min="0" step="100" />
-            </label>
-
-            <label class="checkbox span-2">
-                <InputCheckbox @bind-Value="_profile.Preferences.Remote" />
-                Open to remote work
-            </label>
-
-            @if (_message is not null)
-            {
-                <p class="span-2 @(_isError ? "error" : "success")">@_message</p>
-            }
-
-            <div class="actions span-2">
-                <a class="button" href="/cv">Upload a new CV</a>
-                <button class="primary" type="button" @onclick="SaveAsync" disabled="@_saving">
-                    @(_saving ? "Saving…" : _isConfirmed ? "Save changes" : "Save & start matching")
-                </button>
+    <div class="profile-layout">
+        <aside class="panel avatar-panel" aria-labelledby="avatar-title">
+            <div class="panel-head">
+                <h2 id="avatar-title">Avatar</h2>
+                <span class="panel-meta">@AvatarCatalog.Get(Session.AvatarId).Name</span>
             </div>
-        </EditForm>
-    </section>
+            <div class="avatar-preview">
+                <PixelAvatar AvatarId="Session.AvatarId" Size="120" />
+            </div>
+            <AvatarPicker />
+            <p class="panel-note">Shown in your record and at the center of your orbit. Saved to your account.</p>
+        </aside>
+
+        <section class="panel card">
+            <div class="card-head">
+                <h1>Review your profile</h1>
+                @if (_isConfirmed)
+                {
+                    <span class="badge ok">Matching on</span>
+                }
+                else
+                {
+                    <span class="badge warn">Not confirmed</span>
+                }
+            </div>
+            <p class="muted">This is what we match jobs against. Fix anything we got wrong, then save to start matching.</p>
+
+            <EditForm Model="_profile" FormName="profile" class="grid">
+                <label class="span-2">
+                    Headline
+                    <InputText @bind-Value="_profile.Headline" />
+                </label>
+
+                <TagInput Label="Roles" @bind-Values="_profile.Roles" Placeholder="e.g. Backend developer" />
+                <TagInput Label="Skills" @bind-Values="_profile.Skills" Placeholder="e.g. C#" />
+
+                <label>
+                    Seniority
+                    <InputSelect @bind-Value="_profile.Seniority">
+                        @foreach (var level in SeniorityLevels)
+                        {
+                            <option value="@level">@level</option>
+                        }
+                    </InputSelect>
+                </label>
+                <label>
+                    Years of experience
+                    <InputNumber @bind-Value="_profile.YearsOfExperience" min="0" step="0.5" />
+                </label>
+
+                <TagInput Label="Languages" @bind-Values="_profile.Languages" Placeholder="lv, en, ru" />
+                <label>
+                    Location
+                    <InputText @bind-Value="_profile.Location" />
+                </label>
+
+                <TagInput Label="Preferred cities" @bind-Values="_profile.Preferences.Cities" Placeholder="e.g. Rīga" />
+                <label>
+                    Minimum salary (EUR / month, gross)
+                    <InputNumber @bind-Value="_profile.Preferences.SalaryMin" min="0" step="100" />
+                </label>
+
+                <label class="checkbox span-2">
+                    <InputCheckbox @bind-Value="_profile.Preferences.Remote" />
+                    Open to remote work
+                </label>
+
+                @if (_message is not null)
+                {
+                    <p class="span-2 @(_isError ? "error" : "success")">@_message</p>
+                }
+
+                <div class="actions span-2">
+                    <a class="button" href="/cv">Upload a new CV</a>
+                    <button class="primary" type="button" @onclick="SaveAsync" disabled="@_saving">
+                        @(_saving ? "Saving…" : _isConfirmed ? "Save changes" : "Save & start matching")
+                    </button>
+                </div>
+            </EditForm>
+        </section>
+    </div>
 }
 
 @code {
@@ -99,6 +115,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        Session.Changed += OnSessionChanged;
         var result = await Api.GetProfileAsync();
         if (result is { IsSuccess: true, Value: { } response })
         {
@@ -140,4 +157,9 @@ else
         _message = "Saved. New matches will use the updated profile.";
         _isError = false;
     }
+
+    // The avatar can change from the account menu while this page is open.
+    private void OnSessionChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Session.Changed -= OnSessionChanged;
 }

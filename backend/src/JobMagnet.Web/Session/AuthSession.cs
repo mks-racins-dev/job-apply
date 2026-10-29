@@ -15,6 +15,9 @@ public class AuthSession(ProtectedLocalStorage storage)
 
     public string? Email { get; private set; }
 
+    // Not persisted: MainLayout reads it from the API after the session loads.
+    public int AvatarId { get; private set; }
+
     public bool IsSignedIn => Token is not null;
 
     public event Action? Changed;
@@ -45,10 +48,17 @@ public class AuthSession(ProtectedLocalStorage storage)
         Changed?.Invoke();
     }
 
+    public void SetAvatar(int avatarId)
+    {
+        AvatarId = avatarId;
+        Changed?.Invoke();
+    }
+
     public async Task SignOutAsync()
     {
         Token = null;
         Email = null;
+        AvatarId = 0;
         await storage.DeleteAsync(StorageKey);
         Changed?.Invoke();
     }
