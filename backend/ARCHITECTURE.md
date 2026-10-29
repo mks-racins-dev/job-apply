@@ -24,7 +24,7 @@ Api:                register/login ─▶ upload CV ─▶ Claude builds profile
 
 ## Data model
 
-- `User`: email, password hash, avatar (index into the web app's 16 pixel avatars).
+- `User`: email, password hash, avatar (index into the web app's 16 illustrated avatars).
 - `CvDocument`: the uploaded file path and its extracted text.
 - `Profile`: one per user. The structured profile is stored as `jsonb` so its schema can change without migrations. `IsConfirmed` becomes true once the user saves it.
 - `Job`: unique per `(Source, ExternalId)`. `DedupeHash` identifies the same vacancy posted on several sites. `IsActive` turns false when a job hasn't been seen for 3 days.

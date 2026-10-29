@@ -1,18 +1,11 @@
 namespace JobMagnet.Web.Components.Shared;
 
-// Pixel avatars are drawn from a 10×12 sprite: one base face, varied by hair, skin, shirt and accessories.
+// Sixteen illustrated people: one face shape, varied by hair, skin, shirt and accessories.
 public static class AvatarCatalog
 {
-    public const int Width = 10;
-    public const int Height = 12;
-
     public enum Hair { Short, Long, Bun, Bald, Cap, Curly }
 
     public record Avatar(string Name, Hair Hair, string Skin, string HairColor, string Shirt, bool Glasses);
-
-    private const string Eye = "#1d1f2b";
-    private const int EyeRow = 4;
-    private const string Lens = "#2a2d3a";
 
     // Skin tones span the full range; shirts stay muted so a crowd of avatars doesn't turn into confetti.
     public static readonly IReadOnlyList<Avatar> All =
@@ -37,82 +30,8 @@ public static class AvatarCatalog
 
     public static Avatar Get(int id) => All[Math.Clamp(id, 0, All.Count - 1)];
 
-    public record Pixel(int X, int Y, string Color);
-
-    public static IReadOnlyList<Pixel> Draw(Avatar avatar)
-    {
-        var mouth = Shade(avatar.Skin);
-        var sprite = BaseSprite(avatar.Hair);
-        var pixels = new List<Pixel>(Width * Height);
-
-        for (var y = 0; y < Height; y++)
-        {
-            for (var x = 0; x < Width; x++)
-            {
-                var color = sprite[y][x] switch
-                {
-                    'h' => avatar.HairColor,
-                    's' => avatar.Skin,
-                    'e' => Eye,
-                    'm' => mouth,
-                    'c' => avatar.Shirt,
-                    'k' => Shade(avatar.Shirt),
-                    _ => null
-                };
-
-                if (color is not null)
-                {
-                    pixels.Add(new Pixel(x, y, color));
-                }
-            }
-        }
-
-        if (avatar.Glasses)
-        {
-            // Frames on the eye row: outer rims and the bridge between the eyes.
-            pixels.AddRange([new(1, EyeRow, Lens), new(4, EyeRow, Lens), new(5, EyeRow, Lens), new(8, EyeRow, Lens)]);
-        }
-
-        return pixels;
-    }
-
-    // Rows 7-11 (chin, neck, shoulders) are shared; the hairstyle decides the top of the head.
-    private static readonly string[] Face =
-    [
-        ".seessees.",
-        ".ssssssss.",
-        ".sssmmsss.",
-        "..ssssss..",
-        "...ssss...",
-        ".kcccccck.",
-        "kcccccccck",
-        "cccccccccc"
-    ];
-
-    private static readonly string[] LongFace =
-    [
-        "hseesseesh",
-        "hssssssssh",
-        "hsssmmsssh",
-        "hhsssssshh",
-        "hh.ssss.hh",
-        ".kcccccck.",
-        "kcccccccck",
-        "cccccccccc"
-    ];
-
-    private static string[] BaseSprite(Hair hair) => hair switch
-    {
-        Hair.Long => ["..hhhhhh..", ".hhhhhhhh.", "hhhhhhhhhh", "hhsssssshh", .. LongFace],
-        Hair.Bun => ["...hhhh...", ".hhhhhhhh.", ".hhhhhhhh.", ".hssssssh.", .. Face],
-        Hair.Bald => ["..........", "...ssss...", "..ssssss..", ".ssssssss.", .. Face],
-        Hair.Cap => ["..hhhhhh..", ".hhhhhhhh.", ".hhhhhhhhh", ".ssssssss.", .. Face],
-        Hair.Curly => [".h.hhhh.h.", "hhhhhhhhhh", "hhhhhhhhhh", "hhsssssshh", .. Face],
-        _ => ["..........", "..hhhhhh..", ".hhhhhhhh.", ".hssssssh.", .. Face]
-    };
-
     // Darkens a #rrggbb colour; used for mouths and shirt shading so every palette stays consistent.
-    private static string Shade(string hex)
+    public static string Shade(string hex)
     {
         const double Factor = 0.78;
         var r = (int)(Convert.ToInt32(hex.Substring(1, 2), 16) * Factor);

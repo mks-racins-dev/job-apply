@@ -5,7 +5,7 @@
 <div class="account-menu @(_open ? "open" : null)" @onkeydown="OnKeyDown">
     <button class="account-trigger" aria-haspopup="true" aria-expanded="@(_open ? "true" : "false")"
             aria-controls="account-panel" @onclick="Toggle">
-        <PixelAvatar AvatarId="Session.AvatarId" Size="30" Label="Your account" />
+        <PersonAvatar AvatarId="Session.AvatarId" Size="30" Label="Your account" />
         <span class="account-chevron" aria-hidden="true"></span>
     </button>
 
@@ -14,7 +14,7 @@
         <div class="account-backdrop" @onclick="Close"></div>
         <div id="account-panel" class="account-panel" role="menu">
             <div class="account-head">
-                <PixelAvatar AvatarId="Session.AvatarId" Size="48" />
+                <PersonAvatar AvatarId="Session.AvatarId" Size="48" />
                 <div class="account-id">
                     <span class="account-name">@AvatarCatalog.Get(Session.AvatarId).Name</span>
                     <span class="account-email">@Session.Email</span>

@@ -185,7 +185,7 @@ a:hover { text-decoration: underline; text-underline-offset: .2em; }
     transition: background-color .2s var(--ease-out);
 }
 .account-trigger:hover, .account-menu.open .account-trigger { background: var(--fill-strong); }
-.account-trigger .pixel-avatar { background: var(--surface); border-radius: 50%; padding: 2px; }
+.account-trigger .person-avatar { background: var(--surface); border-radius: 50%; }
 .account-chevron {
     width: 6px;
     height: 6px;
@@ -216,7 +216,7 @@ a:hover { text-decoration: underline; text-underline-offset: .2em; }
 }
 
 .account-head { display: flex; gap: .8rem; align-items: center; padding: .7rem .7rem .8rem; }
-.account-head .pixel-avatar { background: var(--fill); border-radius: var(--radius); padding: 4px; }
+.account-head .person-avatar { background: var(--fill); border-radius: 50%; }
 .account-id { display: flex; flex-direction: column; min-width: 0; gap: .1rem; }
 .account-name { font: 600 1rem/1.2 var(--font-display); }
 .account-email { color: var(--muted); font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -489,8 +489,9 @@ section > form .primary[type=submit] { width: 100%; padding: .7rem; }
     place-items: center;
     width: 64px;
     height: 64px;
-    border-radius: var(--radius);
+    border-radius: 50%;
     background: var(--fill);
+    overflow: hidden;
 }
 .profile-card-id { display: flex; flex-direction: column; gap: .2rem; min-width: 0; }
 .profile-card-id h2 { font-size: 1rem; line-height: 1.3; }
@@ -637,6 +638,7 @@ table.jobs { width: 100%; border-collapse: collapse; font-size: .88rem; }
     width: 84px;
     height: 84px;
     border-radius: 50%;
+    overflow: hidden;
     background: var(--surface);
     box-shadow: var(--shadow-card), 0 0 0 6px var(--fill);
 }
@@ -689,6 +691,7 @@ table.jobs { width: 100%; border-collapse: collapse; font-size: .88rem; }
     .bubble-title { display: none; }
     .bubble.is-new::after { width: 6px; height: 6px; top: 10%; right: 10%; }
     .orbit-avatar { width: 64px; height: 64px; }
+    .orbit-avatar .person-avatar { width: 64px; height: 64px; }
 }
 
 /* Bubbles arrive small and settle into place around you. */
@@ -740,7 +743,8 @@ table.jobs { width: 100%; border-collapse: collapse; font-size: .88rem; }
 .avatar-preview {
     display: grid;
     place-items: center;
-    padding: 1.5rem 0;
+    padding: 1.5rem 0 0;
+    overflow: hidden;
     margin-bottom: 1rem;
     border-radius: var(--radius);
     background: var(--fill);
@@ -748,16 +752,17 @@ table.jobs { width: 100%; border-collapse: collapse; font-size: .88rem; }
 
 .avatar-picker { display: grid; grid-template-columns: repeat(4, 1fr); gap: .45rem; }
 .avatar-option {
-    padding: .35rem;
+    padding: .35rem .35rem 0;
+    overflow: hidden;
     border-radius: var(--radius);
     background: var(--fill);
     transition: background-color .15s var(--ease-out), box-shadow .15s var(--ease-out), transform .15s var(--ease-out);
 }
 .avatar-option:hover:not(:disabled) { background: var(--fill-strong); }
 .avatar-option.selected, .avatar-option.selected:hover:not(:disabled) { background: var(--surface); box-shadow: 0 0 0 2px var(--accent); }
-.avatar-option .pixel-avatar { display: block; margin: 0 auto; }
+.avatar-option .person-avatar { display: block; margin: 0 auto; }
 
-.pixel-avatar { image-rendering: pixelated; flex-shrink: 0; }
+.person-avatar { display: block; flex-shrink: 0; }
 
 /* ---------- Blazor ---------- */
 
