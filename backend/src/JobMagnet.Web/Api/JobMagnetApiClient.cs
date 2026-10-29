@@ -41,8 +41,11 @@ public class JobMagnetApiClient(HttpClient http, AuthSession session)
         return await SendAsync<ProfileResponse>(HttpMethod.Post, "cv", form, cancellationToken);
     }
 
-    public Task<ApiResult<List<MatchItem>>> GetMatchesAsync(int minScore) =>
-        SendAsync<List<MatchItem>>(HttpMethod.Get, $"matches?minScore={minScore}");
+    public Task<ApiResult<MatchPage>> GetMatchesAsync(MatchQuery query) =>
+        SendAsync<MatchPage>(
+            HttpMethod.Get,
+            $"matches?minScore={query.MinScore}&page={query.Page}&pageSize={query.PageSize}"
+                + $"&sort={Uri.EscapeDataString(query.Sort)}&dir={(query.Descending ? "desc" : "asc")}");
 
     public Task<ApiResult<MatchItem>> SubmitJobAsync(SubmitJobRequest request, CancellationToken cancellationToken) =>
         SendAsync<MatchItem>(HttpMethod.Post, "jobs", JsonContent.Create(request, options: JsonOptions), cancellationToken);

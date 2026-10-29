@@ -11,7 +11,8 @@ namespace JobMagnet.Api.Matches;
 public static class MatchEndpoints
 {
     private const int DefaultMinScore = 50;
-    private const int MaxResults = 100;
+    private const int DefaultPageSize = 25;
+    private const int MaxPageSize = 100;
 
     public record MatchResponse(
         Guid Id,
@@ -28,6 +29,8 @@ public static class MatchEndpoints
 
     public record StatusUpdate(MatchStatus Status);
 
+    public record MatchPage(IReadOnlyList<MatchResponse> Items, int Total, int NewCount, int Page, int PageSize);
+
     public static void MapMatchEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/matches").RequireAuthorization();
@@ -35,20 +38,26 @@ public static class MatchEndpoints
         group.MapPatch("/{id:guid}", UpdateStatusAsync);
     }
 
-    private static async Task<IResult> ListAsync(ClaimsPrincipal principal, JobMagnetDbContext db, int? minScore)
+    private static async Task<IResult> ListAsync(
+        ClaimsPrincipal principal, JobMagnetDbContext db, int? minScore, int? page, int? pageSize, string? sort, string? dir)
     {
         var userId = principal.GetUserId();
         var threshold = minScore ?? DefaultMinScore;
+        var size = Math.Clamp(pageSize ?? DefaultPageSize, 1, MaxPageSize);
+        var pageNumber = Math.Max(page ?? 1, 1);
 
-        var matches = await db.Matches.AsNoTracking()
-            .Where(m => m.UserId == userId && m.Score >= threshold && m.Status != MatchStatus.Dismissed && m.Job!.IsActive)
-            .OrderByDescending(m => m.Score)
-            .ThenByDescending(m => m.CreatedAt)
-            .Take(MaxResults)
+        var visible = db.Matches.AsNoTracking()
+            .Where(m => m.UserId == userId && m.Score >= threshold && m.Status != MatchStatus.Dismissed && m.Job!.IsActive);
+
+        var total = await visible.CountAsync();
+        var newCount = await visible.CountAsync(m => m.Status == MatchStatus.New);
+        var items = await MatchSorting.Apply(visible, sort, dir)
+            .Skip((pageNumber - 1) * size)
+            .Take(size)
             .Select(ToResponse)
             .ToListAsync();
 
-        return Results.Ok(matches);
+        return Results.Ok(new MatchPage(items, total, newCount, pageNumber, size));
     }
 
     public static async Task<MatchResponse?> GetAsync(JobMagnetDbContext db, Guid userId, Guid matchId) =>

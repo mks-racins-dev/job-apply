@@ -41,8 +41,14 @@ html, body {
     margin: 0;
     background: var(--bg);
     color: var(--text);
-    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    /* Inter is built for screens; the system stack covers it while it loads or if Google Fonts is blocked. */
+    font: 15px/1.55 "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
 }
+
+/* Digits line up in scores, salaries and dates. */
+.jobs td, .score, .score-pill, .bubble-score, .pager { font-variant-numeric: tabular-nums; }
 
 h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
 h2 { font-size: 1.25rem; margin: .5rem 0 .25rem; }
@@ -250,6 +256,22 @@ table.jobs { width: 100%; border-collapse: collapse; }
 @media (max-width: 640px) {
     .jobs .hide-sm { display: none; }
 }
+
+/* Pager */
+.pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .75rem;
+    margin-top: 1rem;
+}
+.pager-buttons { display: flex; gap: .25rem; align-items: center; }
+.pager-buttons button { min-width: 2.25rem; padding: .35rem .6rem; }
+.pager-buttons button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pager-gap { padding: 0 .25rem; color: var(--muted); }
+.page-size { flex-direction: row; align-items: center; gap: .5rem; margin: 0; font-weight: 400; color: var(--muted); }
+.page-size select { width: auto; padding: .3rem .5rem; }
 
 /* Orbit */
 .orbit {

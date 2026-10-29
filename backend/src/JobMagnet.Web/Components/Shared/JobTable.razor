@@ -5,7 +5,7 @@
                 @foreach (var column in Columns)
                 {
                     <th class="@column.CssClass" aria-sort="@AriaSort(column.Key)">
-                        <button class="sort" @onclick="() => SortBy(column.Key)">
+                        <button class="sort" @onclick="() => SortByAsync(column.Key)">
                             @column.Label <span class="sort-arrow">@Arrow(column.Key)</span>
                         </button>
                     </th>
@@ -13,7 +13,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var match in Sorted)
+            @foreach (var match in Matches)
             {
                 <tr @key="match.Id"
                     class="@(match.Id == SelectedId ? "selected" : null) @(match.Status == MatchStatus.New ? "is-new" : null)"
@@ -43,23 +43,37 @@
     private const int StrongScore = 75;
     private const int FairScore = 50;
 
-    private enum SortKey { Score, Title, Company, City, Salary, Source, Added }
+    // Keys match the API's sort parameter.
+    public const string ScoreKey = "score";
 
-    private record Column(SortKey Key, string Label, string? CssClass = null);
+    private record Column(string Key, string Label, string? CssClass = null);
 
     private static readonly Column[] Columns =
     [
-        new(SortKey.Score, "Score", "num"),
-        new(SortKey.Title, "Job"),
-        new(SortKey.Company, "Company"),
-        new(SortKey.City, "City", "hide-sm"),
-        new(SortKey.Salary, "Salary", "hide-sm"),
-        new(SortKey.Source, "Source", "hide-sm"),
-        new(SortKey.Added, "Added", "hide-sm")
+        new(ScoreKey, "Score", "num"),
+        new("title", "Job"),
+        new("company", "Company"),
+        new("city", "City", "hide-sm"),
+        new("salary", "Salary", "hide-sm"),
+        new("source", "Source", "hide-sm"),
+        new("added", "Added", "hide-sm")
     ];
+
+    // Numbers and dates read best biggest/newest first; text reads best A→Z.
+    private static readonly HashSet<string> DescendingFirst = [ScoreKey, "salary", "added"];
+
+    public static bool IsKnownSort(string? key) => Columns.Any(c => c.Key == key);
+
+    public static bool DefaultDescending(string key) => DescendingFirst.Contains(key);
 
     [Parameter, EditorRequired]
     public List<MatchItem> Matches { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public string Sort { get; set; } = ScoreKey;
+
+    [Parameter, EditorRequired]
+    public bool Descending { get; set; }
 
     [Parameter]
     public Guid? SelectedId { get; set; }
@@ -67,48 +81,16 @@
     [Parameter]
     public EventCallback<MatchItem> OnSelect { get; set; }
 
-    private SortKey _sortKey = SortKey.Score;
-    private bool _descending = true;
+    // Raised with the new sort key and direction.
+    [Parameter]
+    public EventCallback<(string Sort, bool Descending)> OnSort { get; set; }
 
-    private IEnumerable<MatchItem> Sorted
-    {
-        get
-        {
-            var ordered = _sortKey switch
-            {
-                SortKey.Title => Order(m => m.Job.Title),
-                SortKey.Company => Order(m => m.Job.Company ?? string.Empty),
-                SortKey.City => Order(m => m.Job.City ?? string.Empty),
-                SortKey.Salary => Order(m => m.Job.SalaryMax ?? m.Job.SalaryMin ?? 0),
-                SortKey.Source => Order(m => m.Job.Source),
-                SortKey.Added => Order(m => m.CreatedAt),
-                _ => Order(m => m.Score)
-            };
+    private Task SortByAsync(string key) =>
+        OnSort.InvokeAsync(Sort == key ? (key, !Descending) : (key, DefaultDescending(key)));
 
-            // Ties keep the best match first, whatever column is sorted.
-            return ordered.ThenByDescending(m => m.Score);
-        }
-    }
+    private string Arrow(string key) => Sort != key ? string.Empty : Descending ? "↓" : "↑";
 
-    private IOrderedEnumerable<MatchItem> Order<TKey>(Func<MatchItem, TKey> key) =>
-        _descending ? Matches.OrderByDescending(key) : Matches.OrderBy(key);
-
-    private void SortBy(SortKey key)
-    {
-        if (_sortKey == key)
-        {
-            _descending = !_descending;
-            return;
-        }
-
-        _sortKey = key;
-        // Numbers and dates read best biggest/newest first; text reads best A→Z.
-        _descending = key is SortKey.Score or SortKey.Salary or SortKey.Added;
-    }
-
-    private string Arrow(SortKey key) => _sortKey != key ? string.Empty : _descending ? "↓" : "↑";
-
-    private string AriaSort(SortKey key) => _sortKey != key ? "none" : _descending ? "descending" : "ascending";
+    private string AriaSort(string key) => Sort != key ? "none" : Descending ? "descending" : "ascending";
 
     private static bool HasSalary(JobItem job) => job.SalaryMin is not null || job.SalaryMax is not null;
 
