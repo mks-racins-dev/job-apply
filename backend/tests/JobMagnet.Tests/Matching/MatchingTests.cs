@@ -42,6 +42,15 @@ public class MatchingTests
     }
 
     [Fact]
+    public void Prefilter_MatchesSingleRoleWords()
+    {
+        var terms = ProfileTerms.FromJson("""{"roles": ["QA Engineer"], "skills": []}""");
+        var job = CreateJob("Quality Assurance Engineer", string.Empty, null);
+
+        Assert.Single(CandidatePrefilter.SelectCandidates(terms, [job], 10));
+    }
+
+    [Fact]
     public void Prefilter_RespectsMaxCandidates()
     {
         var jobs = Enumerable.Range(0, 5).Select(i => CreateJob($"PostgreSQL DBA {i}", string.Empty, null)).ToList();

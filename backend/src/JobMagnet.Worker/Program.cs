@@ -14,6 +14,7 @@ public static class Program
         builder.Services.AddJobMagnetScrapers(builder.Configuration);
         builder.Services.AddJobMagnetMatching(builder.Configuration);
         builder.Services.AddHostedService<PipelineBackgroundService>();
+        builder.Services.AddHostedService<MatchingBackgroundService>();
 
         var host = builder.Build();
         await host.RunAsync();

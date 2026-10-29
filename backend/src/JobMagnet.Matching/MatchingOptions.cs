@@ -10,4 +10,6 @@ public class MatchingOptions
     public int JobsPerScoringRequest { get; set; } = 10;
 
     public int NotifyThreshold { get; set; } = 70;
+
+    public TimeSpan RunInterval { get; set; } = TimeSpan.FromMinutes(5);
 }

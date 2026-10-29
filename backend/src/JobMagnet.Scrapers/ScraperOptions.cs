@@ -4,7 +4,7 @@ public class ScraperOptions
 {
     public const string SectionName = "Scrapers";
 
-    public int MaxPagesPerSource { get; set; } = 3;
+    public int MaxPagesPerSource { get; set; } = 10;
 
     // visidarbi.lv asks for a 10 second crawl delay in robots.txt; apply it to every source.
     public TimeSpan DelayBetweenRequests { get; set; } = TimeSpan.FromSeconds(10);
