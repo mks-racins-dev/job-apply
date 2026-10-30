@@ -86,7 +86,7 @@ All Claude calls go through `IClaudeJsonClient` (model `claude-opus-5-5`, low ef
 | `POST /cv` | ✓ | multipart `file`; returns the draft profile |
 | `GET /me`, `PUT /me/avatar` | ✓ | Account email and chosen avatar (0–15) |
 | `GET /profile`, `PUT /profile` | ✓ | `PUT` body is the profile JSON and confirms it |
-| `GET /matches?minScore=50&page=1&pageSize=25&sort=score&dir=desc` | ✓ | Active, not-dismissed matches, one page at a time: `{ items, total, newCount, page, pageSize }`. `sort` is one of score, title, company, city, salary, source or added; jobs without a salary always sort last |
+| `GET /matches?filter=all&minScore=50&page=1&pageSize=25&sort=score&dir=desc` | ✓ | One page of matches plus a count per filter: `{ items, total, counts, newCount, interestedCount, ... }`. `filter` is `all` (not dismissed), `favorites` (Interested), `recent` (scored in the last 24 h) or `dismissed`. Favorites and dismissed ignore `minScore`. `sort` is one of score, title, company, city, salary, source or added; jobs without a salary always sort last |
 | `PATCH /matches/{id}` | ✓ | `{ "status": "Interested" }` |
 | `GET /jobs/feed` | ✓ | Freshness per site: last new job, jobs added in the last 24 h, active jobs, last check. Scraped jobs only |
 | `POST /jobs` | ✓ | `{ "url"?, "text" }`: adds a pasted job, returns its match |
@@ -108,7 +108,7 @@ Blazor Web App with interactive server rendering and **prerendering turned off**
 | `/add-job` | Paste a job (e.g. from LinkedIn); it's scored and opened in the orbit |
 | `/profile` | Edits the Claude-built profile; the first save confirms it and turns matching on |
 | Account menu | Top right, behind your avatar: profile, CV, avatar picker, sign out |
-| `/` | Orbit or table, switched at the top and kept in the URL (`?view=table&page=2&size=50&sort=salary&dir=asc&minScore=60`), so any view can be bookmarked or shared. The table pages and sorts on the server. The orbit: you in the center, matches as bubbles. A higher score puts the bubble closer and makes it bigger (`OrbitLayout`), and *Interested* pulls it further in. Clicking a bubble opens `JobDetails` and marks the match as seen. The page refreshes every minute; this stands in for push notifications |
+| `/` | Orbit or table, switched at the top and kept in the URL (`?view=table&filter=favorites&page=2&size=50&sort=salary&dir=asc&minScore=60`), so any view can be bookmarked or shared. The table pages and sorts on the server. The orbit: you in the center, matches as bubbles. A higher score puts the bubble closer and makes it bigger (`OrbitLayout`), and *Interested* pulls it further in. Clicking a bubble opens `JobDetails` and marks the match as seen. The page refreshes every minute; this stands in for push notifications |
 
 ## Configuration
 

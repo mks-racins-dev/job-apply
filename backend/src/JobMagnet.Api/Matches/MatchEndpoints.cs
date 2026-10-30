@@ -29,7 +29,10 @@ public static class MatchEndpoints
 
     public record StatusUpdate(MatchStatus Status);
 
-    public record MatchPage(IReadOnlyList<MatchResponse> Items, int Total, int NewCount, int InterestedCount, int Page, int PageSize);
+    public record FilterCounts(int All, int Favorites, int Recent, int Dismissed);
+
+    public record MatchPage(
+        IReadOnlyList<MatchResponse> Items, int Total, int NewCount, int InterestedCount, string Filter, FilterCounts Counts, int Page, int PageSize);
 
     public static void MapMatchEndpoints(this IEndpointRouteBuilder app)
     {
@@ -39,26 +42,44 @@ public static class MatchEndpoints
     }
 
     private static async Task<IResult> ListAsync(
-        ClaimsPrincipal principal, JobMagnetDbContext db, int? minScore, int? page, int? pageSize, string? sort, string? dir)
+        ClaimsPrincipal principal,
+        JobMagnetDbContext db,
+        TimeProvider timeProvider,
+        int? minScore,
+        int? page,
+        int? pageSize,
+        string? sort,
+        string? dir,
+        string? filter)
     {
         var userId = principal.GetUserId();
         var threshold = minScore ?? DefaultMinScore;
         var size = Math.Clamp(pageSize ?? DefaultPageSize, 1, MaxPageSize);
         var pageNumber = Math.Max(page ?? 1, 1);
+        var activeFilter = MatchFilter.Normalize(filter);
+        var now = timeProvider.GetUtcNow();
 
-        var visible = db.Matches.AsNoTracking()
-            .Where(m => m.UserId == userId && m.Score >= threshold && m.Status != MatchStatus.Dismissed && m.Job!.IsActive);
+        var mine = db.Matches.AsNoTracking().Where(m => m.UserId == userId && m.Job!.IsActive);
+        var everything = MatchFilter.Apply(mine, MatchFilter.All, threshold, now);
+        var visible = MatchFilter.Apply(mine, activeFilter, threshold, now);
 
+        var counts = new FilterCounts(
+            await everything.CountAsync(),
+            await MatchFilter.Apply(mine, MatchFilter.Favorites, threshold, now).CountAsync(),
+            await MatchFilter.Apply(mine, MatchFilter.Recent, threshold, now).CountAsync(),
+            await MatchFilter.Apply(mine, MatchFilter.Dismissed, threshold, now).CountAsync());
+
+        // New and interested describe the whole pipeline, whichever filter is on screen.
+        var newCount = await everything.CountAsync(m => m.Status == MatchStatus.New);
+        var interestedCount = await everything.CountAsync(m => m.Status == MatchStatus.Interested);
         var total = await visible.CountAsync();
-        var newCount = await visible.CountAsync(m => m.Status == MatchStatus.New);
-        var interestedCount = await visible.CountAsync(m => m.Status == MatchStatus.Interested);
         var items = await MatchSorting.Apply(visible, sort, dir)
             .Skip((pageNumber - 1) * size)
             .Take(size)
             .Select(ToResponse)
             .ToListAsync();
 
-        return Results.Ok(new MatchPage(items, total, newCount, interestedCount, pageNumber, size));
+        return Results.Ok(new MatchPage(items, total, newCount, interestedCount, activeFilter, counts, pageNumber, size));
     }
 
     public static async Task<MatchResponse?> GetAsync(JobMagnetDbContext db, Guid userId, Guid matchId) =>

@@ -47,7 +47,14 @@
                 @onclick="() => OnStatus.InvokeAsync(MatchStatus.Interested)">
             @(Match.Status == MatchStatus.Interested ? "★ Interested" : "☆ Interested")
         </button>
-        <button @onclick="() => OnStatus.InvokeAsync(MatchStatus.Dismissed)">Dismiss</button>
+        @if (Match.Status == MatchStatus.Dismissed)
+        {
+            <button @onclick="() => OnStatus.InvokeAsync(MatchStatus.Seen)">Restore</button>
+        }
+        else
+        {
+            <button @onclick="() => OnStatus.InvokeAsync(MatchStatus.Dismissed)">Dismiss</button>
+        }
         @if (!string.IsNullOrEmpty(Match.Job.Url))
         {
             <a class="button primary" href="@Match.Job.Url" target="_blank" rel="noopener">Open original ↗</a>

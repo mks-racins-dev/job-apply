@@ -449,6 +449,31 @@ section > form .primary[type=submit] { width: 100%; padding: .7rem; }
 .toolbar-title .muted { font-size: .88rem; }
 .toolbar-controls { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; }
 
+/* Filter chips: quiet until chosen; the count says what each one holds before you click. */
+.filters { display: flex; flex-wrap: wrap; gap: .4rem; margin: -.25rem 0 1.25rem; }
+.filter {
+    gap: .45rem;
+    padding: .38rem .55rem .38rem .85rem;
+    background: none;
+    box-shadow: inset 0 0 0 1px var(--hairline-strong);
+    color: var(--ink-2);
+    font-size: .84rem;
+}
+.filter:hover:not(:disabled) { background: var(--fill); color: var(--ink); }
+.filter.active, .filter.active:hover:not(:disabled) { background: var(--ink); color: var(--surface); box-shadow: none; }
+.filter-count {
+    min-width: 1.5rem;
+    padding: .05rem .4rem;
+    border-radius: 999px;
+    background: var(--fill);
+    color: var(--muted);
+    font-size: .76rem;
+    font-weight: 600;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+.filter.active .filter-count { background: oklch(1 0 0 / 16%); color: var(--surface); }
+
 /* Segmented control: a sliding white thumb on a grey track. */
 .segmented {
     display: inline-flex;

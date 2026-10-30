@@ -43,7 +43,7 @@
                 {
                     <CandidateRecord Profile="_profile" AvatarId="Session.AvatarId" />
                 }
-                <PipelineStatus Total="_total" New="_newCount" Interested="_interestedCount" MinScore="_minScore" />
+                <PipelineStatus Total="_counts.All" New="_newCount" Interested="_interestedCount" MinScore="_minScore" />
                 @if (_feed is not null)
                 {
                     <JobFeedPanel Feed="_feed" Now="_now" />
@@ -71,14 +71,30 @@
                     </div>
                 </div>
 
+                <nav class="filters" aria-label="Filter matches">
+                    @foreach (var option in FilterOptions)
+                    {
+                        <button class="filter @(option.Key == _filter ? "active" : null)"
+                                aria-pressed="@(option.Key == _filter ? "true" : "false")"
+                                @onclick="() => OnFilter(option.Key)">
+                            <span>@option.Label</span>
+                            <span class="filter-count">@option.Count(_counts)</span>
+                        </button>
+                    }
+                </nav>
+
                 @if (_matches.Count == 0)
                 {
                     <div class="empty">
                         <p class="empty-title">@EmptyTitle</p>
-                        <p class="muted">New listings are scraped every two hours and scored within minutes. This page refreshes itself.</p>
+                        <p class="muted">@EmptyHint</p>
                         @if (_page > 1)
                         {
                             <button @onclick="() => OnPage(1)">Back to page 1</button>
+                        }
+                        else if (_filter != AllFilter)
+                        {
+                            <button @onclick="() => OnFilter(AllFilter)">Show all matches</button>
                         }
                         else if (_minScore > 0)
                         {
@@ -172,6 +188,9 @@
     [SupplyParameterFromQuery(Name = "dir")]
     public string? DirParam { get; set; }
 
+    [SupplyParameterFromQuery(Name = "filter")]
+    public string? FilterParam { get; set; }
+
     [SupplyParameterFromQuery(Name = "minScore")]
     public int? MinScoreParam { get; set; }
 
@@ -194,6 +213,8 @@
     private int _page = 1;
     private int _pageSize = DefaultPageSize;
     private string _sort = JobTable.ScoreKey;
+    private string _filter = AllFilter;
+    private FilterCounts _counts = new(0, 0, 0, 0);
     private bool _descending = true;
     private int _total;
     private int _newCount;
@@ -205,7 +226,36 @@
 
     private List<MatchItem> TopPicks => _matches.OrderByDescending(m => m.Score).Take(TopPickCount).ToList();
 
-    private string EmptyTitle => _page > 1 ? $"Page {_page} is empty." : $"No matches scoring {_minScore} or more yet.";
+    private record FilterOption(string Key, string Label, Func<FilterCounts, int> Count);
+
+    // Keys match the API's filter parameter.
+    private const string AllFilter = "all";
+
+    private static readonly FilterOption[] FilterOptions =
+    [
+        new(AllFilter, "All", c => c.All),
+        new("favorites", "Favorites", c => c.Favorites),
+        new("recent", "Last 24 h", c => c.Recent),
+        new("dismissed", "Dismissed", c => c.Dismissed)
+    ];
+
+    private string EmptyTitle => _page > 1
+        ? $"Page {_page} is empty."
+        : _filter switch
+        {
+            "favorites" => "No favorites yet.",
+            "recent" => "Nothing new in the last 24 hours.",
+            "dismissed" => "Nothing dismissed.",
+            _ => $"No matches scoring {_minScore} or more yet."
+        };
+
+    private string EmptyHint => _filter switch
+    {
+        "favorites" => "Open a job and mark it Interested to keep it here.",
+        "recent" => $"Only matches scoring {_minScore} or more are counted. New listings are scraped every two hours.",
+        "dismissed" => "Jobs you dismiss land here, and you can restore them any time.",
+        _ => "New listings are scraped every two hours and scored within minutes. This page refreshes itself."
+    };
 
     private static string PickMeta(MatchItem pick)
     {
@@ -219,9 +269,18 @@
     {
         get
         {
-            var jobs = $"{_total} job{(_total == 1 ? "" : "s")} scoring {_minScore}+";
+            var plural = _total == 1 ? "" : "s";
+            var jobs = _filter switch
+            {
+                "favorites" => $"{_total} favorite{plural}",
+                "dismissed" => $"{_total} dismissed job{plural}",
+                "recent" => $"{_total} job{plural} scoring {_minScore}+ in the last 24 h",
+                _ => $"{_total} job{plural} scoring {_minScore}+"
+            };
             var total = _view == HomeView.Orbit && _total > _matches.Count ? $"Top {_matches.Count} of {jobs}" : jobs;
-            return _newCount > 0 ? $"{total} · {_newCount} new" : total;
+
+            // "N new" describes the whole pipeline, so it only belongs next to the unfiltered list.
+            return _filter == AllFilter && _newCount > 0 ? $"{total} · {_newCount} new" : total;
         }
     }
 
@@ -247,7 +306,7 @@
             return;
         }
 
-        await LoadMatchesAsync();
+        await Task.WhenAll(LoadMatchesAsync(), LoadFeedAsync());
         if (FocusMatchId is { } focusId && focusId != _focusedId)
         {
             _focusedId = focusId;
@@ -267,6 +326,7 @@
             _ => _storedView ?? HomeView.Orbit
         };
         _minScore = Math.Clamp(MinScoreParam ?? DefaultMinScore, 0, MaxScore);
+        _filter = FilterOptions.Any(f => f.Key == FilterParam?.ToLowerInvariant()) ? FilterParam!.ToLowerInvariant() : AllFilter;
         _page = Math.Max(PageParam ?? 1, 1);
         _pageSize = SizeParam is { } size && Pager.PageSizes.Contains(size) ? size : DefaultPageSize;
         _sort = JobTable.IsKnownSort(SortParam) ? SortParam! : JobTable.ScoreKey;
@@ -312,8 +372,8 @@
     {
         // The orbit always shows the strongest matches; only the table pages and sorts.
         var query = _view == HomeView.Table
-            ? new MatchQuery(_minScore, _page, _pageSize, _sort, _descending)
-            : new MatchQuery(_minScore, 1, OrbitSize, JobTable.ScoreKey, Descending: true);
+            ? new MatchQuery(_minScore, _page, _pageSize, _sort, _descending, _filter)
+            : new MatchQuery(_minScore, 1, OrbitSize, JobTable.ScoreKey, Descending: true, _filter);
 
         var result = await Api.GetMatchesAsync(query);
         if (result is not { IsSuccess: true, Value: { } page })
@@ -323,11 +383,11 @@
             return;
         }
 
-        await LoadFeedAsync();
         _matches = page.Items;
         _total = page.Total;
         _newCount = page.NewCount;
         _interestedCount = page.InterestedCount;
+        _counts = page.Counts;
         _selected = _selected is null ? null : _matches.FirstOrDefault(m => m.Id == _selected.Id);
         _state = HomeState.Ready;
     }
@@ -354,7 +414,7 @@
                 {
                     await InvokeAsync(async () =>
                     {
-                        await LoadMatchesAsync();
+                        await Task.WhenAll(LoadMatchesAsync(), LoadFeedAsync());
                         StateHasChanged();
                     });
                 }
@@ -368,8 +428,15 @@
 
     // Values equal to their defaults are left out of the URL to keep it short.
     private void UpdateQuery(
-        HomeView? view = null, int? page = null, int? size = null, string? sort = null, bool? descending = null, int? minScore = null)
+        HomeView? view = null,
+        int? page = null,
+        int? size = null,
+        string? sort = null,
+        bool? descending = null,
+        int? minScore = null,
+        string? filter = null)
     {
+        var nextFilter = filter ?? _filter;
         var nextView = view ?? _view;
         var nextSort = sort ?? _sort;
         var nextDescending = descending ?? _descending;
@@ -388,6 +455,7 @@
                 ? (nextDescending ? DescendingValue : AscendingValue)
                 : null,
             ["minScore"] = nextMinScore != DefaultMinScore ? nextMinScore : null,
+            ["filter"] = nextFilter != AllFilter ? nextFilter : null,
             ["match"] = null
         };
 
@@ -429,6 +497,8 @@
 
     private void OnPage(int page) => UpdateQuery(page: page);
 
+    private void OnFilter(string filter) => UpdateQuery(filter: filter, page: 1);
+
     private void OnPageSize(int size) => UpdateQuery(size: size, page: 1);
 
     private async Task SelectAsync(MatchItem match)
@@ -456,32 +526,13 @@
             return;
         }
 
-        if (match.Status == MatchStatus.New)
-        {
-            _newCount = Math.Max(_newCount - 1, 0);
-        }
-
-        if (match.Status == MatchStatus.Interested)
-        {
-            _interestedCount = Math.Max(_interestedCount - 1, 0);
-        }
-
-        if (target == MatchStatus.Interested)
-        {
-            _interestedCount++;
-        }
-
-        if (target == MatchStatus.Dismissed)
-        {
-            _matches.Remove(match);
-            _total = Math.Max(_total - 1, 0);
-            _selected = null;
-            return;
-        }
-
         var updated = match with { Status = target };
-        _matches[_matches.IndexOf(match)] = updated;
-        _selected = updated;
+        await LoadMatchesAsync();
+
+        // Keep the details open on the job just changed, even if it has left the current filter
+        // (e.g. restored from Dismissed), so the user sees what happened. Dismissing closes it.
+        var dismissedHere = target == MatchStatus.Dismissed && _filter != "dismissed";
+        _selected = dismissedHere ? null : _matches.FirstOrDefault(m => m.Id == match.Id) ?? updated;
     }
 
     // The avatar can change from the account menu while this page is open.
