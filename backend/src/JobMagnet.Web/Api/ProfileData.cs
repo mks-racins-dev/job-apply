@@ -9,7 +9,7 @@ public class ProfileData
 
     public List<string> Skills { get; set; } = [];
 
-    public string Seniority { get; set; } = "mid";
+    public string? Seniority { get; set; }
 
     public double YearsOfExperience { get; set; }
 

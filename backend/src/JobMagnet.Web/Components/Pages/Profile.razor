@@ -59,6 +59,7 @@ else
                 <label>
                     Seniority
                     <InputSelect @bind-Value="_profile.Seniority">
+                        <option value="">Not set</option>
                         @foreach (var level in SeniorityLevels)
                         {
                             <option value="@level">@level</option>
@@ -137,7 +138,8 @@ else
         _message = null;
 
         var wasConfirmed = _isConfirmed;
-        var result = await Api.SaveProfileAsync(_profile!);
+        _profile!.Seniority = string.IsNullOrWhiteSpace(_profile.Seniority) ? null : _profile.Seniority;
+        var result = await Api.SaveProfileAsync(_profile);
         _saving = false;
 
         if (!result.IsSuccess)

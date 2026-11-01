@@ -3,7 +3,7 @@
         <span class="avatar-tile"><PersonAvatar AvatarId="AvatarId" Size="64" /></span>
         <div class="profile-card-id">
             <h2 id="profile-card-title">@(string.IsNullOrWhiteSpace(Profile.Headline) ? "Your profile" : Profile.Headline)</h2>
-            <p class="muted">@Capitalize(Profile.Seniority) · @Years</p>
+            <p class="muted">@(string.IsNullOrWhiteSpace(Profile.Seniority) ? Years : $"{Capitalize(Profile.Seniority)} · {Years}")</p>
         </div>
     </div>
 
@@ -73,6 +73,6 @@
         }
     }
 
-    private static string Capitalize(string value) =>
+    private static string? Capitalize(string? value) =>
         string.IsNullOrEmpty(value) ? value : char.ToUpperInvariant(value[0]) + value[1..];
 }

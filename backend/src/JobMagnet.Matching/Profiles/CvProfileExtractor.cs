@@ -6,7 +6,8 @@ public class CvProfileExtractor(IClaudeJsonClient claude)
         You turn a CV into a structured candidate profile for matching against Latvian job listings.
         CVs may be written in Latvian, English or Russian; write the profile in English but keep
         proper names (companies, schools, technologies) as written. Only include facts the CV supports.
-        For seniority use one of: intern, junior, mid, senior, lead. Languages use ISO 639-1 codes.
+        For seniority use one of: intern, junior, mid, senior, lead, or null when the CV does not show it.
+        Languages use ISO 639-1 codes.
         """;
 
     private static readonly IReadOnlyDictionary<string, System.Text.Json.JsonElement> Schema = JsonSchema.Parse("""
@@ -18,7 +19,7 @@ public class CvProfileExtractor(IClaudeJsonClient claude)
             "headline": { "type": "string" },
             "roles": { "type": "array", "items": { "type": "string" } },
             "skills": { "type": "array", "items": { "type": "string" } },
-            "seniority": { "type": "string", "enum": ["intern", "junior", "mid", "senior", "lead"] },
+            "seniority": { "type": ["string", "null"], "enum": ["intern", "junior", "mid", "senior", "lead", null] },
             "yearsOfExperience": { "type": "number" },
             "languages": { "type": "array", "items": { "type": "string" } },
             "location": { "type": "string" },
