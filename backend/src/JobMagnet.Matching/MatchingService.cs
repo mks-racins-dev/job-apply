@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 
 using JobMagnet.Data;
 using JobMagnet.Data.Entities;
+using JobMagnet.Matching.Profiles;
 using JobMagnet.Matching.Scoring;
 
 namespace JobMagnet.Matching;
@@ -34,6 +35,12 @@ public class MatchingService(
     public async Task<int> RunForProfileAsync(Profile profile, CancellationToken cancellationToken)
     {
         var settings = options.Value;
+        if (CandidateProfile.FromJson(profile.Data) is not { } candidate)
+        {
+            logger.LogWarning("User {UserId}: profile could not be read, skipping", profile.UserId);
+            return 0;
+        }
+
         var alreadyMatched = db.Matches.Where(m => m.UserId == profile.UserId).Select(m => m.JobId);
         var unmatchedJobs = await db.Jobs.AsNoTracking()
             .Where(j => j.IsActive && j.SubmittedByUserId == null && !alreadyMatched.Contains(j.Id))
@@ -41,12 +48,12 @@ public class MatchingService(
             .ConfigureAwait(false);
 
         var candidates = CandidatePrefilter.SelectCandidates(
-            ProfileTerms.FromJson(profile.Data), unmatchedJobs, settings.MaxCandidatesPerUser);
+            ProfileTerms.FromProfile(candidate), unmatchedJobs, settings.MaxCandidatesPerUser);
 
         var strongMatches = 0;
         foreach (var batch in candidates.Chunk(settings.JobsPerScoringRequest))
         {
-            var scores = await scorer.ScoreAsync(profile.Data, batch, cancellationToken).ConfigureAwait(false);
+            var scores = await scorer.ScoreAsync(candidate, batch, cancellationToken).ConfigureAwait(false);
             db.Matches.AddRange(scores.Select(score => ToMatch(profile.UserId, score)));
             strongMatches += scores.Count(score => score.Score >= settings.NotifyThreshold);
         }

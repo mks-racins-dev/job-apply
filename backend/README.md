@@ -18,7 +18,7 @@ dotnet run --project src/JobMagnet.Api     # http://localhost:5034
 cd src/JobMagnet.Web && dotnet run         # web, talks to :5034
 ```
 
-Set `ANTHROPIC_API_KEY` in the shell or a `.env` file for CV parsing and matching.
+Set `ANTHROPIC_API_KEY` in the shell or a `.env` file for matching.
 
 ## Migrations
 

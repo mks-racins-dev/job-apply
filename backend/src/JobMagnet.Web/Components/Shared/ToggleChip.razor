@@ -1,0 +1,15 @@
+<label class="toggle-chip @(Checked ? "on" : null)">
+    <input type="checkbox" checked="@Checked" @onchange="() => CheckedChanged.InvokeAsync()" />
+    <span>@Label</span>
+</label>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool Checked { get; set; }
+
+    [Parameter]
+    public EventCallback CheckedChanged { get; set; }
+}

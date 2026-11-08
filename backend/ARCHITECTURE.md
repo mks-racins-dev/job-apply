@@ -2,13 +2,13 @@
 
 Two backend processes share one Postgres database, and a web app sits in front of them:
 
-- **Api**: what clients talk to (auth, CV upload, profile, matches).
+- **Api**: what clients talk to (auth, profile, matches).
 - **Worker**: a background loop that scrapes jobs and scores them for users.
 - **Web**: a Blazor Server UI that only talks to the Api over HTTP, just like the future mobile app will.
 
 ```
 Worker (every 2h):  scrape 3 sites ─▶ Jobs table ─▶ prefilter per user ─▶ Claude scores ─▶ Matches table
-Api:                register/login ─▶ upload CV ─▶ Claude builds profile ─▶ user confirms ─▶ GET /matches
+Api:                register/login ─▶ user fills in profile form ─▶ GET /matches
 ```
 
 ## Projects
@@ -17,16 +17,15 @@ Api:                register/login ─▶ upload CV ─▶ Claude builds profile
 |---|---|
 | `JobMagnet.Data` | EF Core entities, `JobMagnetDbContext`, migrations, `TextNormalizer` |
 | `JobMagnet.Scrapers` | One `IJobSource` per site, HTML/JSON parsers, `JobIngestionService` |
-| `JobMagnet.Matching` | `ClaudeJsonClient`, CV → profile, prefilter, scoring, `MatchingService` |
-| `JobMagnet.Api` | Minimal API endpoints, JWT auth, PDF/DOCX text extraction |
+| `JobMagnet.Matching` | `ClaudeJsonClient`, `CandidateProfile`, prefilter, scoring, `MatchingService` |
+| `JobMagnet.Api` | Minimal API endpoints, JWT auth |
 | `JobMagnet.Worker` | `PipelineBackgroundService`: runs ingestion, then matching, on a timer |
-| `JobMagnet.Web` | Blazor UI: sign-in, CV upload, profile review, the job orbit |
+| `JobMagnet.Web` | Blazor UI: sign-in, profile form, the job orbit |
 
 ## Data model
 
 - `User`: email, password hash, avatar (index into the web app's 16 illustrated avatars).
-- `CvDocument`: the uploaded file path and its extracted text.
-- `Profile`: one per user. The structured profile is stored as `jsonb` so its schema can change without migrations. `IsConfirmed` becomes true once the user saves it.
+- `Profile`: one per user, a serialized `CandidateProfile` stored as `jsonb` so its schema can change without migrations. `IsConfirmed` becomes true once the user saves it.
 - `Job`: unique per `(Source, ExternalId)`. `DedupeHash` identifies the same vacancy posted on several sites. `FirstSeenAt` is when we first scraped it (not the site's posting date). `IsActive` turns false when a job hasn't been seen for 3 days.
 - `Match`: one per `(User, Job)`, with a score from 0 to 100, a reason, matched and missing skills, and a status (`New`/`Seen`/`Interested`/`Dismissed`).
 
@@ -49,9 +48,13 @@ Parsers are static and work without HTTP (`Parse(html)`), so they can be tested 
 
 After all sources run, it deactivates jobs older than `InactiveAfter`. A failing site is logged and skipped.
 
-## CV → profile
+## Profile
 
-`POST /cv` takes a PDF or DOCX of up to 10 MB. PdfPig or OpenXML extracts the text, then `CvProfileExtractor` sends it to Claude with a JSON schema (structured outputs), so the reply is always valid profile JSON. The profile is saved unconfirmed. `PUT /profile` stores the user's edited version and marks it confirmed. **Only confirmed profiles get matched.**
+There's no CV upload: no files are stored and no CV text goes anywhere. The user fills in `/profile` themselves: name, previous roles with years (up to 5), roles they're interested in (may differ from their experience), roles to avoid, hard and soft skills, languages with a level, education, courses, cities, work mode, employment type, minimum salary and driving licence categories.
+
+`PUT /profile` binds the body to `CandidateProfile`, which `Normalize()` cleans up (trims, dedupes, caps sizes, keeps only known options) and `Validate()` checks: a first name, at least one past or wanted role, and a city or remote. Saving confirms the profile. **Only confirmed profiles get matched.**
+
+**The name never reaches Claude.** `JobScorer.ScoreAsync` takes a `CandidateProfile`, not JSON, and sends only `ToScoringJson()`, which leaves out first and last name.
 
 ## Jobs pasted in by the user (LinkedIn)
 
@@ -75,7 +78,7 @@ For each confirmed profile, `MatchingService`:
 
 So the cost per user per run is at most `20 / 10 = 2` Claude calls.
 
-All Claude calls go through `IClaudeJsonClient` (model `claude-opus-5-5`, low effort, JSON schema output). If Claude declines a request, the client returns `null` and the caller skips that CV or batch.
+All Claude calls go through `IClaudeJsonClient` (model `claude-opus-5-5`, low effort, JSON schema output). If Claude declines a request, the client returns `null` and the caller skips that batch.
 
 ## API
 
@@ -83,9 +86,8 @@ All Claude calls go through `IClaudeJsonClient` (model `claude-opus-5-5`, low ef
 |---|---|---|
 | `GET /health` | – | Checks that the database is reachable |
 | `POST /auth/register`, `POST /auth/login` | – | Returns `{ token }` (a JWT, valid 30 days) |
-| `POST /cv` | ✓ | multipart `file`; returns the draft profile |
 | `GET /me`, `PUT /me/avatar` | ✓ | Account email and chosen avatar (0–15) |
-| `GET /profile`, `PUT /profile` | ✓ | `PUT` body is the profile JSON and confirms it |
+| `GET /profile`, `PUT /profile` | ✓ | `PUT` body is a `CandidateProfile`; it's validated (400 with a message) and confirms the profile |
 | `GET /matches?filter=all&minScore=50&page=1&pageSize=25&sort=score&dir=desc` | ✓ | One page of matches plus a count per filter: `{ items, total, counts, newCount, interestedCount, ... }`. `filter` is `all` (not dismissed), `favorites` (Interested), `recent` (scored in the last 24 h) or `dismissed`. Favorites and dismissed ignore `minScore`. `sort` is one of score, title, company, city, salary, source or added; jobs without a salary always sort last |
 | `PATCH /matches/{id}` | ✓ | `{ "status": "Interested" }` |
 | `GET /jobs/feed` | ✓ | Freshness per site: last new job, jobs added in the last 24 h, active jobs, last check. Scraped jobs only |
@@ -104,10 +106,9 @@ Blazor Web App with interactive server rendering and **prerendering turned off**
 | Page | Does |
 |---|---|
 | `/login` | Sign in or register |
-| `/cv` | Upload a PDF/DOCX; on success, goes to `/profile` |
 | `/add-job` | Paste a job (e.g. from LinkedIn); it's scored and opened in the orbit |
-| `/profile` | Edits the Claude-built profile; the first save confirms it and turns matching on |
-| Account menu | Top right, behind your avatar: profile, CV, avatar picker, sign out |
+| `/profile` | The profile form; the first save confirms it and turns matching on |
+| Account menu | Top right, behind your avatar: profile, avatar picker, sign out |
 | `/` | Orbit or table, switched at the top and kept in the URL (`?view=table&filter=favorites&page=2&size=50&sort=salary&dir=asc&minScore=60`), so any view can be bookmarked or shared. The table pages and sorts on the server. The orbit: you in the center, matches as bubbles. A higher score puts the bubble closer and makes it bigger (`OrbitLayout`), and *Interested* pulls it further in. Clicking a bubble opens `JobDetails` and marks the match as seen. The page refreshes every minute; this stands in for push notifications |
 
 ## Configuration
@@ -115,9 +116,8 @@ Blazor Web App with interactive server rendering and **prerendering turned off**
 | Key | Where | Default |
 |---|---|---|
 | `ConnectionStrings:Postgres` | both | local docker Postgres |
-| `ANTHROPIC_API_KEY` (env) | both | required for CV parsing and matching |
+| `ANTHROPIC_API_KEY` (env) | both | required for matching |
 | `Jwt:SigningKey` | api | required, at least 32 chars (dev key in `appsettings.Development.json`) |
-| `Storage:UploadsPath` | api | `uploads` |
 | `Database:MigrateOnStartup` | api | `true` |
 | `Scrapers:*` | worker | 3 pages, 10s delay, every 2h, inactive after 3 days |
 | `Matching:*` | worker | 20 candidates, batches of 10, notify threshold 70 |
@@ -136,4 +136,4 @@ You can override any key with an environment variable, using `__` as the separat
 
 ## Not built yet
 
-Push notifications (the score threshold exists, but nothing is sent), Google/Apple login, OCR for scanned CVs, using dismissals to improve scoring, and city names for cv.lv.
+Push notifications (the score threshold exists, but nothing is sent), Google/Apple login, using dismissals to improve scoring, and city names for cv.lv.

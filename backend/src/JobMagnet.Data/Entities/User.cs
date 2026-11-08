@@ -17,7 +17,5 @@ public class User
 
     public DateTimeOffset CreatedAt { get; set; }
 
-    public List<CvDocument> CvDocuments { get; set; } = [];
-
     public List<Match> Matches { get; set; } = [];
 }

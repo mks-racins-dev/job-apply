@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 using JobMagnet.Data;
 using JobMagnet.Data.Entities;
+using JobMagnet.Matching.Profiles;
 using JobMagnet.Matching.Scoring;
 
 namespace JobMagnet.Matching.Submitted;
@@ -23,7 +24,7 @@ public class SubmittedJobService(
         var profile = await db.Profiles.AsNoTracking()
             .SingleOrDefaultAsync(p => p.UserId == userId && p.IsConfirmed, cancellationToken)
             .ConfigureAwait(false);
-        if (profile is null)
+        if (profile is null || CandidateProfile.FromJson(profile.Data) is not { } candidate)
         {
             return new SubmitJobResult(SubmitJobStatus.ProfileNotConfirmed);
         }
@@ -54,7 +55,7 @@ public class SubmittedJobService(
         var job = SubmittedJobFactory.Create(userId, normalizedUrl, postingText, extracted, now);
         job.Id = Guid.NewGuid();
 
-        var score = (await scorer.ScoreAsync(profile.Data, [job], cancellationToken).ConfigureAwait(false)).FirstOrDefault();
+        var score = (await scorer.ScoreAsync(candidate, [job], cancellationToken).ConfigureAwait(false)).FirstOrDefault();
         if (score is null)
         {
             return new SubmitJobResult(SubmitJobStatus.ScoringFailed);

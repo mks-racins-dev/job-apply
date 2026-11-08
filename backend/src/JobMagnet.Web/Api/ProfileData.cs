@@ -1,21 +1,37 @@
 namespace JobMagnet.Web.Api;
 
-// Mirrors the JSON schema in CvProfileExtractor; mutable so the review form can bind to it.
+// Mirrors CandidateProfile in JobMagnet.Matching; mutable so the profile form can bind to it.
 public class ProfileData
 {
-    public string Headline { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
 
-    public List<string> Roles { get; set; } = [];
+    public string LastName { get; set; } = string.Empty;
 
-    public List<string> Skills { get; set; } = [];
+    public List<ExperienceEntry> Experience { get; set; } = [];
 
-    public string? Seniority { get; set; }
+    public List<string> InterestedRoles { get; set; } = [];
 
-    public double YearsOfExperience { get; set; }
+    public List<string> HardSkills { get; set; } = [];
 
-    public List<string> Languages { get; set; } = [];
+    public List<string> SoftSkills { get; set; } = [];
 
-    public string Location { get; set; } = string.Empty;
+    public List<LanguageSkill> Languages { get; set; } = [];
 
-    public ProfilePreferences Preferences { get; set; } = new();
+    public string? EducationLevel { get; set; }
+
+    public string? EducationField { get; set; }
+
+    public List<string> Courses { get; set; } = [];
+
+    public List<string> Cities { get; set; } = [];
+
+    public List<string> WorkModes { get; set; } = [];
+
+    public List<string> EmploymentTypes { get; set; } = [];
+
+    public decimal? SalaryMin { get; set; }
+
+    public List<string> DrivingLicences { get; set; } = [];
+
+    public List<string> Avoid { get; set; } = [];
 }

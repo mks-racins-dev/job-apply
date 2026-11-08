@@ -379,28 +379,50 @@ section > form .primary[type=submit] { width: 100%; padding: .7rem; }
 .chip { background: var(--fill); }
 .chip-quiet { color: var(--muted); }
 
-/* ---------- CV upload ---------- */
+/* ---------- Profile form ---------- */
 
-.dropzone {
-    position: relative;
-    align-items: center;
-    justify-content: center;
-    gap: .35rem;
-    min-height: 200px;
-    margin: .25rem 0 0;
-    border: 1.5px dashed var(--hairline-strong);
-    border-radius: var(--radius);
+.profile-form { display: flex; flex-direction: column; gap: 1.75rem; margin-top: 1rem; }
+.form-section { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; }
+.form-section legend { padding: 0; margin-bottom: .85rem; font: 600 1.05rem/1.3 var(--font-display); letter-spacing: -0.012em; color: var(--ink); }
+.form-section + .form-section { padding-top: 1.75rem; border-top: 1px solid var(--hairline); }
+.form-section .grid { margin-top: 0; }
+.form-hint { margin: -.5rem 0 1rem; color: var(--muted); font-size: .82rem; line-height: 1.45; }
+
+/* Repeatable rows (experience, languages): a wide input, a narrow one and a remove button. */
+.form-row { display: grid; grid-template-columns: minmax(0, 1fr) 11rem auto; gap: .6rem; align-items: center; margin-bottom: .6rem; }
+.form-row label { margin: 0; }
+.form-row-side { flex-direction: row; align-items: center; gap: .5rem; font-weight: 400; }
+.form-row-side input { width: 5.5rem; }
+.icon-button { width: 2.1rem; height: 2.1rem; padding: 0; background: none; color: var(--muted); font-size: 1.15rem; }
+.icon-button:hover:not(:disabled) { background: var(--fill); color: var(--danger); }
+.add-row { align-self: flex-start; padding: .35rem .2rem; background: none; color: var(--accent); font-size: .86rem; }
+.add-row:hover:not(:disabled) { background: none; text-decoration: underline; }
+
+.toggle-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+.toggle-chip {
+    flex-direction: row;
+    margin: 0;
+    padding: .4rem .85rem;
+    border-radius: 999px;
     background: var(--fill);
-    text-align: center;
-    cursor: pointer;
-    font-weight: 400;
     color: var(--ink-2);
-    transition: border-color .2s var(--ease-out), background-color .2s var(--ease-out);
+    font-weight: 500;
+    font-size: .84rem;
+    cursor: pointer;
+    transition: background-color .2s var(--ease-out), color .2s var(--ease-out);
 }
-.dropzone:hover { border-color: var(--accent); background: var(--accent-soft); }
-.dropzone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.dropzone.busy { cursor: progress; }
-.dropzone-title { font-weight: 600; color: var(--accent); font-size: 1rem; }
+.toggle-chip:hover { background: var(--fill-strong); }
+.toggle-chip.on { background: var(--accent-soft); color: var(--accent); }
+.toggle-chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.toggle-chip:has(input:focus-visible) { box-shadow: 0 0 0 3px var(--accent-soft); }
+.salary-field input { max-width: 12rem; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-width: 640px) {
+    .form-row { grid-template-columns: minmax(0, 1fr) auto; }
+    .form-row-main { grid-column: 1 / -1; }
+}
 
 .spinner {
     width: 24px;

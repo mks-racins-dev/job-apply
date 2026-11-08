@@ -23,37 +23,6 @@ namespace JobMagnet.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("JobMagnet.Data.Entities.CvDocument", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("ExtractedText")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("StoragePath")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("UploadedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("CvDocuments");
-                });
-
             modelBuilder.Entity("JobMagnet.Data.Entities.Job", b =>
                 {
                     b.Property<Guid>("Id")
@@ -241,17 +210,6 @@ namespace JobMagnet.Data.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("JobMagnet.Data.Entities.CvDocument", b =>
-                {
-                    b.HasOne("JobMagnet.Data.Entities.User", "User")
-                        .WithMany("CvDocuments")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("JobMagnet.Data.Entities.Match", b =>
                 {
                     b.HasOne("JobMagnet.Data.Entities.Job", "Job")
@@ -284,8 +242,6 @@ namespace JobMagnet.Data.Migrations
 
             modelBuilder.Entity("JobMagnet.Data.Entities.User", b =>
                 {
-                    b.Navigation("CvDocuments");
-
                     b.Navigation("Matches");
                 });
 #pragma warning restore 612, 618

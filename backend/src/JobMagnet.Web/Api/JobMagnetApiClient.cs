@@ -4,16 +4,12 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-using Microsoft.AspNetCore.Components.Forms;
-
 using JobMagnet.Web.Session;
 
 namespace JobMagnet.Web.Api;
 
 public class JobMagnetApiClient(HttpClient http, AuthSession session)
 {
-    public const long MaxCvBytes = 10 * 1024 * 1024;
-
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         Converters = { new JsonStringEnumConverter() }
@@ -34,17 +30,6 @@ public class JobMagnetApiClient(HttpClient http, AuthSession session)
 
     public Task<ApiResult<ProfileResponse>> SaveProfileAsync(ProfileData profile) =>
         SendAsync<ProfileResponse>(HttpMethod.Put, "profile", JsonContent.Create(profile, options: JsonOptions));
-
-    public async Task<ApiResult<ProfileResponse>> UploadCvAsync(IBrowserFile file, CancellationToken cancellationToken)
-    {
-        await using var stream = file.OpenReadStream(MaxCvBytes, cancellationToken);
-        using var fileContent = new StreamContent(stream);
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue(
-            string.IsNullOrEmpty(file.ContentType) ? "application/octet-stream" : file.ContentType);
-
-        using var form = new MultipartFormDataContent { { fileContent, "file", file.Name } };
-        return await SendAsync<ProfileResponse>(HttpMethod.Post, "cv", form, cancellationToken);
-    }
 
     public Task<ApiResult<MatchPage>> GetMatchesAsync(MatchQuery query) =>
         SendAsync<MatchPage>(

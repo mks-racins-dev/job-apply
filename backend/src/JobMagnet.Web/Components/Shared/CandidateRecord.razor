@@ -2,40 +2,47 @@
     <div class="profile-card-head">
         <span class="avatar-tile"><PersonAvatar AvatarId="AvatarId" Size="64" /></span>
         <div class="profile-card-id">
-            <h2 id="profile-card-title">@(string.IsNullOrWhiteSpace(Profile.Headline) ? "Your profile" : Profile.Headline)</h2>
-            <p class="muted">@(string.IsNullOrWhiteSpace(Profile.Seniority) ? Years : $"{Capitalize(Profile.Seniority)} · {Years}")</p>
+            <h2 id="profile-card-title">@FullName</h2>
+            <p class="muted">@Headline</p>
         </div>
     </div>
 
     <dl class="list-rows">
         <div>
-            <dt>Based in</dt>
-            <dd>@(string.IsNullOrWhiteSpace(Profile.Location) ? "Not set" : Profile.Location)</dd>
-        </div>
-        <div>
-            <dt>Languages</dt>
-            <dd>@(Profile.Languages.Count == 0 ? "Not set" : string.Join(", ", Profile.Languages.Select(l => l.ToUpperInvariant())))</dd>
+            <dt>Looking for</dt>
+            <dd>@(Profile.InterestedRoles.Count == 0 ? "Roles like your experience" : string.Join(", ", Profile.InterestedRoles))</dd>
         </div>
         <div>
             <dt>Looking in</dt>
             <dd>@Looking</dd>
         </div>
         <div>
-            <dt>Salary from</dt>
-            <dd>@(Profile.Preferences.SalaryMin is { } min ? $"€{min:0} / mo" : "Open")</dd>
+            <dt>Languages</dt>
+            <dd>@(Profile.Languages.Count == 0 ? "Not set" : string.Join(", ", Profile.Languages.Select(l => $"{l.Language} ({l.Level})")))</dd>
         </div>
+        <div>
+            <dt>Salary from</dt>
+            <dd>@(Profile.SalaryMin is { } min ? $"€{min:0} / mo" : "Open")</dd>
+        </div>
+        @if (Profile.DrivingLicences.Count > 0)
+        {
+            <div>
+                <dt>Driving licence</dt>
+                <dd>@string.Join(", ", Profile.DrivingLicences)</dd>
+            </div>
+        }
     </dl>
 
-    @if (Profile.Skills.Count > 0)
+    @if (Profile.HardSkills.Count > 0)
     {
         <div class="chips">
-            @foreach (var skill in Profile.Skills.Take(MaxSkills))
+            @foreach (var skill in Profile.HardSkills.Take(MaxSkills))
             {
                 <span class="chip">@skill</span>
             }
-            @if (Profile.Skills.Count > MaxSkills)
+            @if (Profile.HardSkills.Count > MaxSkills)
             {
-                <span class="chip chip-quiet">+@(Profile.Skills.Count - MaxSkills)</span>
+                <span class="chip chip-quiet">+@(Profile.HardSkills.Count - MaxSkills)</span>
             }
         </div>
     }
@@ -52,19 +59,36 @@
     [Parameter]
     public int AvatarId { get; set; }
 
-    private string Years => Profile.YearsOfExperience switch
+    private string FullName
     {
-        <= 0 => "New to work",
-        1 => "1 year of experience",
-        var years => $"{years:0.#} years of experience"
+        get
+        {
+            var name = $"{Profile.FirstName} {Profile.LastName}".Trim();
+            return name.Length == 0 ? "Your profile" : name;
+        }
+    }
+
+    // The most relevant past role, or what they're heading for when they're new to work.
+    private string Headline => Profile.Experience.FirstOrDefault() switch
+    {
+        { } latest => $"{latest.Role} · {Years(latest.Years)}",
+        null when Profile.InterestedRoles.Count > 0 => $"Heading for {Profile.InterestedRoles[0]}",
+        _ => "New to work"
+    };
+
+    private static string Years(decimal years) => years switch
+    {
+        <= 0 => "under a year",
+        1 => "1 year",
+        _ => $"{years:0.#} years"
     };
 
     private string Looking
     {
         get
         {
-            var places = Profile.Preferences.Cities.ToList();
-            if (Profile.Preferences.Remote)
+            var places = Profile.Cities.ToList();
+            if (Profile.WorkModes.Contains("remote"))
             {
                 places.Add("Remote");
             }
@@ -72,7 +96,4 @@
             return places.Count == 0 ? "Anywhere" : string.Join(", ", places);
         }
     }
-
-    private static string? Capitalize(string? value) =>
-        string.IsNullOrEmpty(value) ? value : char.ToUpperInvariant(value[0]) + value[1..];
 }

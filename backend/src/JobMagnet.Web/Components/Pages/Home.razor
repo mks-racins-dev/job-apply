@@ -13,19 +13,11 @@
         <p class="muted">Loading…</p>
         break;
 
-    case HomeState.NeedsCv:
+    case HomeState.NeedsProfile:
         <section class="card narrow">
             <h1>Let's get jobs coming to you</h1>
-            <p class="muted">Upload your CV once. We turn it into a profile and score new listings from visidarbi.lv, cv.lv and ss.lv against it.</p>
-            <a class="button primary" href="/cv">Upload CV</a>
-        </section>
-        break;
-
-    case HomeState.NeedsConfirmation:
-        <section class="card narrow">
-            <h1>One more step</h1>
-            <p class="muted">Review the profile we built from your CV. Matching starts once you save it.</p>
-            <a class="button primary" href="/profile">Review profile</a>
+            <p class="muted">Tell us what you've done, what you're good at and what you want next. We score new listings from visidarbi.lv, cv.lv and ss.lv against it.</p>
+            <a class="button primary" href="/profile">Fill in your profile</a>
         </section>
         break;
 
@@ -198,7 +190,7 @@
     [SupplyParameterFromQuery(Name = "match")]
     public Guid? FocusMatchId { get; set; }
 
-    private enum HomeState { Loading, NeedsCv, NeedsConfirmation, Ready, Error }
+    private enum HomeState { Loading, NeedsProfile, Ready, Error }
 
     private enum HomeView { Orbit, Table }
 
@@ -343,7 +335,7 @@
         var profile = await Api.GetProfileAsync();
         if (profile.StatusCode == StatusCodes.Status404NotFound)
         {
-            _state = HomeState.NeedsCv;
+            _state = HomeState.NeedsProfile;
             return;
         }
 
@@ -355,7 +347,7 @@
         }
 
         _profile = response.Data;
-        _state = response.IsConfirmed ? HomeState.Ready : HomeState.NeedsConfirmation;
+        _state = response.IsConfirmed ? HomeState.Ready : HomeState.NeedsProfile;
     }
 
     private async Task RetryAsync()

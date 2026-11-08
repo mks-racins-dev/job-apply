@@ -2,7 +2,6 @@ using Anthropic;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-using JobMagnet.Matching.Profiles;
 using JobMagnet.Matching.Scoring;
 using JobMagnet.Matching.Submitted;
 
@@ -18,7 +17,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(_ => new AnthropicClient());
         services.AddSingleton<IClaudeJsonClient, ClaudeJsonClient>();
         services.Configure<MatchingOptions>(configuration.GetSection(MatchingOptions.SectionName));
-        services.AddScoped<CvProfileExtractor>();
         services.AddScoped<JobScorer>();
         services.AddScoped<MatchingService>();
         services.AddScoped<JobPostingExtractor>();

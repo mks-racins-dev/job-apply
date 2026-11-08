@@ -12,8 +12,6 @@ public class JobMagnetDbContext(DbContextOptions<JobMagnetDbContext> options) : 
 
     public DbSet<User> Users => Set<User>();
 
-    public DbSet<CvDocument> CvDocuments => Set<CvDocument>();
-
     public DbSet<Profile> Profiles => Set<Profile>();
 
     public DbSet<Job> Jobs => Set<Job>();
