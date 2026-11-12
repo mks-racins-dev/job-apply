@@ -1,4 +1,4 @@
-using JobMagnet.Web.Components.Shared;
+using JobMagnet.Web.Components.Common;
 
 namespace JobMagnet.Tests.Web;
 

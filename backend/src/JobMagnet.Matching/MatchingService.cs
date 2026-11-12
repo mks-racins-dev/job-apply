@@ -9,13 +9,19 @@ using JobMagnet.Matching.Scoring;
 
 namespace JobMagnet.Matching;
 
-public class MatchingService(
+public partial class MatchingService(
     JobMagnetDbContext db,
     JobScorer scorer,
     IOptions<MatchingOptions> options,
     TimeProvider timeProvider,
     ILogger<MatchingService> logger)
 {
+    [LoggerMessage(Level = LogLevel.Warning, Message = "User {UserId}: profile could not be read, skipping")]
+    private static partial void LogProfileUnreadable(ILogger logger, Guid userId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "User {UserId}: scored {Candidates} candidates, {Strong} above threshold")]
+    private static partial void LogScored(ILogger logger, Guid userId, int candidates, int strong);
+
     public async Task<int> RunForAllUsersAsync(CancellationToken cancellationToken)
     {
         var profiles = await db.Profiles.AsNoTracking()
@@ -37,7 +43,7 @@ public class MatchingService(
         var settings = options.Value;
         if (CandidateProfile.FromJson(profile.Data) is not { } candidate)
         {
-            logger.LogWarning("User {UserId}: profile could not be read, skipping", profile.UserId);
+            LogProfileUnreadable(logger, profile.UserId);
             return 0;
         }
 
@@ -59,8 +65,7 @@ public class MatchingService(
         }
 
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        logger.LogInformation(
-            "User {UserId}: scored {Candidates} candidates, {Strong} above threshold", profile.UserId, candidates.Count, strongMatches);
+        LogScored(logger, profile.UserId, candidates.Count, strongMatches);
         return strongMatches;
     }
 

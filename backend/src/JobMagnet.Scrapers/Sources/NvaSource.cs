@@ -6,10 +6,19 @@ using JobMagnet.Scrapers.Parsing;
 namespace JobMagnet.Scrapers.Sources;
 
 // Reads NVA vacancies through the data.gov.lv CKAN datastore API instead of scraping HTML.
-public class NvaSource(HttpClient httpClient, IOptions<ScraperOptions> options, ILogger<NvaSource> logger) : IJobSource
+public partial class NvaSource(HttpClient httpClient, IOptions<ScraperOptions> options, ILogger<NvaSource> logger) : IJobSource
 {
     private const int PageSize = 1000;
     private readonly ScraperOptions _options = options.Value;
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{Source}: no datastore resource found for dataset {Dataset}")]
+    private static partial void LogNoResource(ILogger logger, string source, string dataset);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{Source} fetched {Count} listings")]
+    private static partial void LogFetched(ILogger logger, string source, int count);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{Source} returned {StatusCode} for {Url}")]
+    private static partial void LogBadStatus(ILogger logger, string source, int statusCode, string url);
 
     public string Name => NvaParser.SourceName;
 
@@ -19,7 +28,7 @@ public class NvaSource(HttpClient httpClient, IOptions<ScraperOptions> options, 
         var resourceId = packageJson is null ? null : NvaParser.ParseResourceId(packageJson);
         if (resourceId is null)
         {
-            logger.LogWarning("{Source}: no datastore resource found for dataset {Dataset}", Name, NvaParser.DatasetId);
+            LogNoResource(logger, Name, NvaParser.DatasetId);
             return [];
         }
 
@@ -41,7 +50,7 @@ public class NvaSource(HttpClient httpClient, IOptions<ScraperOptions> options, 
             }
         }
 
-        logger.LogInformation("{Source} fetched {Count} listings", Name, jobs.Count);
+        LogFetched(logger, Name, jobs.Count);
         return jobs;
     }
 
@@ -50,7 +59,7 @@ public class NvaSource(HttpClient httpClient, IOptions<ScraperOptions> options, 
         using var response = await httpClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            logger.LogWarning("{Source} returned {StatusCode} for {Url}", Name, (int)response.StatusCode, url);
+            LogBadStatus(logger, Name, (int)response.StatusCode, url);
             return null;
         }
 

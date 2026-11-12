@@ -7,13 +7,19 @@ using JobMagnet.Data.Entities;
 
 namespace JobMagnet.Scrapers.Ingestion;
 
-public class JobIngestionService(
+public partial class JobIngestionService(
     JobMagnetDbContext db,
     IEnumerable<IJobSource> sources,
     IOptions<ScraperOptions> options,
     TimeProvider timeProvider,
     ILogger<JobIngestionService> logger)
 {
+    [LoggerMessage(Level = LogLevel.Error, Message = "Scraping {Source} failed")]
+    private static partial void LogScrapeFailed(ILogger logger, Exception exception, string source);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{Source}: {Added} new jobs")]
+    private static partial void LogUpserted(ILogger logger, string source, int added);
+
     public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
         var totalNew = 0;
@@ -28,7 +34,7 @@ public class JobIngestionService(
             catch (HttpRequestException ex)
             {
                 // One broken site must not stop ingestion from the others.
-                logger.LogError(ex, "Scraping {Source} failed", source.Name);
+                LogScrapeFailed(logger, ex, source.Name);
             }
         }
 
@@ -82,7 +88,7 @@ public class JobIngestionService(
         }
 
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-        logger.LogInformation("{Source}: {Added} new jobs", source, added);
+        LogUpserted(logger, source, added);
         return added;
     }
 

@@ -1,6 +1,6 @@
 using JobMagnet.Web.Api;
 
-namespace JobMagnet.Web.Components.Shared;
+namespace JobMagnet.Web.Components.Common;
 
 // Places job bubbles around the user: the better the match, the closer and bigger the bubble.
 public static class OrbitLayout
