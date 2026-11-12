@@ -6,7 +6,7 @@ handoffs:
   - label: Start coding
     agent: Coder
     prompt: Implement the plan above. Follow it step by step and stop if a step is unclear.
-    send: false
+    send: true
 ---
 Read `PLAN.md`, `.github/copilot-instructions.md`, and the code the request touches.
 

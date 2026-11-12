@@ -27,3 +27,5 @@ A change is done only when the build has 0 errors and all tests pass.
 - The user approves the pull request. That approval is the final gate.
 - Stay within the task. Do not fix unrelated problems.
 - Hand off to the next agent only after your stage is complete.
+- Retry cap: each agent counts how many times it has been sent back to fix work in this chat. After 3 rounds, stop handing off, and report the open findings to the user.
+- Hand off automatically, following the handoff button that matches the result. Do not wait for the user between stages, except at the final pull request approval.
