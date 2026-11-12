@@ -1,6 +1,6 @@
 # Job Magnet: Implementation Plan
 
-> Upload your CV once, and jobs from the Latvian market come to you.
+> Fill in your profile once, and jobs from the Latvian market come to you.
 > The idea: you don't apply to everything. You're at the center, and relevant jobs "pop up" to get your attention.
 
 ## 1. Confirmed decisions
@@ -18,8 +18,8 @@
 ```
 ┌────────────────────┐      HTTPS/JSON       ┌──────────────────────────────┐
 │  Expo app (iOS/And)│ ───────────────────▶  │  ASP.NET Core Web API         │
-│  - Auth            │ ◀───────────────────  │  - Auth, CV upload, matches   │
-│  - CV upload       │      Push (Expo)      │                               │
+│  - Profile form    │ ◀───────────────────  │  - Auth, profile, matches     │
+│  - Profile form    │      Push (Expo)      │                               │
 │  - "Job orbit" UI  │ ◀──────────────────── │  Worker service (scrapers)    │
 └────────────────────┘                       │  - per-site scraper jobs      │
                                              │  - normalize + dedupe         │
@@ -28,7 +28,7 @@
                                                         │
                                           ┌─────────────┴─────────────┐
                                           │ PostgreSQL (+ pgvector?)  │
-                                          │ Blob/file storage for CVs │
+                                          │ Profile + match data only │
                                           └───────────────────────────┘
 ```
 
@@ -36,16 +36,17 @@
 - `JobMagnet.Api`: ASP.NET Core minimal API or controllers
 - `JobMagnet.Worker`: hosted background service that runs scrapers on a schedule (Hangfire or Quartz.NET)
 - `JobMagnet.Scrapers`: one class per source behind an `IJobSource` interface
-- `JobMagnet.Matching`: Claude integration (CV parsing and job scoring)
+- `JobMagnet.Matching`: Claude integration (job scoring against the user's profile)
 - `JobMagnet.Data`: EF Core + PostgreSQL
 
 ## 3. Core flows
 
-### 3.1 CV upload and parsing
-1. The user uploads a PDF or DOCX from the app (`expo-document-picker`).
-2. The API stores the file and extracts its text (PDF: PdfPig, DOCX: OpenXML SDK).
-3. Claude converts the CV into a structured **profile** (JSON): roles, skills, seniority, languages (LV/EN/RU), location, preferences.
-4. The user reviews or edits the profile in the app before matching starts.
+### 3.1 Profile form (no CV upload)
+1. The user fills in a short profile form in the app. No CV is uploaded, and no CV text is stored.
+2. The form collects only what matching needs: desired roles, skills (chosen from a list plus optional tags), seniority, languages (LV/EN/RU), city or region, salary floor, and remote preference.
+3. The form avoids free-text fields where possible. It collects no name, photo, address, phone number, date of birth, or employer history. The account needs only the login email.
+4. The user can edit the profile at any time. Each save creates a new profile version, and the user can delete the profile and all matches (see GDPR in Phase 3).
+5. Matching starts after the user saves the profile once.
 
 ### 3.2 Job ingestion
 1. The worker runs each `IJobSource` on a schedule (for example, every 1–3 hours).
@@ -59,7 +60,7 @@
 3. Store `Match` rows. A new match above the threshold triggers a push notification through Expo Push.
 
 ### 3.4 The "jobs come to you" UX
-- The home screen shows the user's avatar or CV at the center, with job "bubbles" orbiting or pulling in, sized and positioned by match score.
+- The home screen shows a neutral center graphic (not a photo or CV) with job "bubbles" orbiting or pulling in, sized and positioned by match score.
 - New matches animate in with a light haptic (`react-native-reanimated`, `expo-haptics`).
 - Tap a bubble to see the job card: why it matched, salary, and source link.
 - Actions: **Interested** (pull closer/save), **Dismiss** (fade out; also feeds back into scoring), **Open original**.
@@ -67,8 +68,7 @@
 
 ## 4. Data model (initial)
 - `User` (id, email, auth provider, push token, created)
-- `CvDocument` (user, file ref, extracted text, uploaded)
-- `Profile` (user, structured JSON, version)
+- `Profile` (user, structured form fields, version, updated). No file or extracted text is stored.
 - `Job` (source, external id, url, title, company, city, salary, language, description, posted, active, hash for dedupe)
 - `Match` (user, job, score, reason, status: new/seen/interested/dismissed)
 
@@ -77,21 +77,21 @@
 **Phase 0: Validation (before writing app code)**
 - Check each source's robots.txt and terms of service, and whether it has an API or RSS feed (see open questions).
 - Build a spike that scrapes ~50 jobs from each source in a console app.
-- Run a Claude prompt test on 3–5 real CVs to tune the profile and scoring prompts and measure the cost per user.
+- Run a Claude prompt test on 3–5 sample profiles (synthetic or consented, never real personal data) to tune the scoring prompt and measure the cost per user.
 
 **Phase 1: Backend MVP**
 - Solution skeleton, Postgres, EF Core migrations, Docker Compose
 - Scrapers for visidarbi.lv, cv.lv, ss.lv
-- CV upload, parsing, and the profile endpoint
+- Profile form API and the profile endpoint (validation, versioning)
 - Matching pipeline and matches endpoint
 
 **Phase 2: App MVP**
-- Expo app: auth, CV upload, profile review, the orbit home screen, job details
+- Expo app: auth, profile form, the orbit home screen, job details
 - Push notifications
 
 **Phase 3: Store release**
 - EAS Build and Submit, App Store Connect and Google Play listings
-- Privacy policy, GDPR (CV = personal data): data deletion, consent, EU hosting
+- Privacy policy, GDPR (profile = personal data): explicit consent, data minimisation, data export and deletion, EU hosting
 - Apple Sign-In (required by Apple if we offer other social logins)
 
 **Phase 4: Improvements**
@@ -105,7 +105,7 @@
 4. **Expo Go vs dev build:** Expo Go is fine for development, but store builds and some modules (push, haptics are fine; any custom native code isn't) need EAS dev/production builds. Is that OK?
 5. **Languages:** app UI in LV, EN, and/or RU? Job descriptions are mixed, and Claude handles all three.
 6. **Hosting:** which provider or region (for example, Hetzner in an EU region for GDPR)?
-7. **CV formats:** only PDF and DOCX, or also photos of paper CVs (OCR)?
+7. **Profile fields:** which fields are required and which are optional? Is a salary floor needed at signup, or later?
 8. **Notifications:** how often and how aggressive? Instant for each match, or a daily digest?
 9. **Budget:** is there a monthly limit for Claude API spend? It determines how aggressive the prefilter needs to be.
 10. **App name and branding:** is "Job Magnet" just a placeholder?
