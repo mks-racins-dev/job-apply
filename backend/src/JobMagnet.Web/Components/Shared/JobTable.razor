@@ -31,6 +31,7 @@
                     <td>@(match.Job.Company ?? "—")</td>
                     <td class="hide-sm">@(match.Job.City ?? "—")</td>
                     <td class="hide-sm nowrap">@(HasSalary(match.Job) ? JobFormat.Salary(match.Job) : "—")</td>
+                    <td class="hide-sm nowrap">@(match.Job.Deadline?.ToString("dd.MM.yyyy") ?? "—")</td>
                     <td class="hide-sm">@JobFormat.Source(match.Job)</td>
                     <td class="hide-sm nowrap muted">@match.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")</td>
                 </tr>
@@ -55,6 +56,7 @@
         new("company", "Company"),
         new("city", "City", "hide-sm"),
         new("salary", "Salary", "hide-sm"),
+        new("deadline", "Deadline", "hide-sm"),
         new("source", "Source", "hide-sm"),
         new("added", "Added", "hide-sm")
     ];

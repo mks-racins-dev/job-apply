@@ -66,6 +66,7 @@ public class JobIngestionService(
             {
                 job.LastSeenAt = now;
                 job.IsActive = true;
+                job.Deadline = item.Deadline ?? job.Deadline;
                 continue;
             }
 
@@ -106,6 +107,7 @@ public class JobIngestionService(
         SalaryMax = item.SalaryMax,
         Description = item.Description,
         PostedAt = item.PostedAt,
+        Deadline = item.Deadline,
         FirstSeenAt = now,
         LastSeenAt = now,
         DedupeHash = hash

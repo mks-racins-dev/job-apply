@@ -22,6 +22,8 @@ public static class MatchSorting
                 m => m.Job!.SalaryMax ?? m.Job.SalaryMin,
                 descending),
             "source" => Order(matches, m => m.Job!.Source, descending),
+            // Jobs without a deadline always go last.
+            "deadline" => Order(matches.OrderBy(m => m.Job!.Deadline == null), m => m.Job!.Deadline, descending),
             "added" => Order(matches, m => m.CreatedAt, descending),
             _ => Order(matches, m => m.Score, descending)
         };

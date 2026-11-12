@@ -25,7 +25,7 @@ public static class MatchEndpoints
         JobResponse Job);
 
     public record JobResponse(
-        Guid Id, string Title, string? Company, string? City, decimal? SalaryMin, decimal? SalaryMax, string Source, string Url);
+        Guid Id, string Title, string? Company, string? City, decimal? SalaryMin, decimal? SalaryMax, string Source, string Url, DateTimeOffset? Deadline);
 
     public record StatusUpdate(MatchStatus Status);
 
@@ -90,7 +90,7 @@ public static class MatchEndpoints
 
     private static readonly System.Linq.Expressions.Expression<Func<Match, MatchResponse>> ToResponse = m => new MatchResponse(
         m.Id, m.Score, m.Reason, m.MatchedSkills, m.MissingSkills, m.Status, m.CreatedAt,
-        new JobResponse(m.Job!.Id, m.Job.Title, m.Job.Company, m.Job.City, m.Job.SalaryMin, m.Job.SalaryMax, m.Job.Source, m.Job.Url));
+        new JobResponse(m.Job!.Id, m.Job.Title, m.Job.Company, m.Job.City, m.Job.SalaryMin, m.Job.SalaryMax, m.Job.Source, m.Job.Url, m.Job.Deadline));
 
     private static async Task<IResult> UpdateStatusAsync(Guid id, StatusUpdate update, ClaimsPrincipal principal, JobMagnetDbContext db)
     {

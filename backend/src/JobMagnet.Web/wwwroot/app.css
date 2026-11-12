@@ -800,11 +800,6 @@ table.jobs { width: 100%; border-collapse: collapse; font-size: .88rem; }
 .details h3 { font-size: .8rem; color: var(--muted); font-weight: 600; }
 .details .actions { justify-content: flex-start; margin-top: 1.5rem; }
 
-/* ---------- Add job ---------- */
-
-.add-job { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: .75rem; padding: 2rem; }
-.add-job > .muted { max-width: 62ch; line-height: 1.55; }
-.hint { font-size: .75rem; font-weight: 400; text-align: right; color: var(--muted); }
 
 /* ---------- Profile ---------- */
 

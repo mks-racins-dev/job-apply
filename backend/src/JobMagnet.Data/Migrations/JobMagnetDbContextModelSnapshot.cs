@@ -35,6 +35,9 @@ namespace JobMagnet.Data.Migrations
                     b.Property<string>("Company")
                         .HasColumnType("text");
 
+                    b.Property<DateTimeOffset?>("Deadline")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("DedupeHash")
                         .IsRequired()
                         .HasMaxLength(64)

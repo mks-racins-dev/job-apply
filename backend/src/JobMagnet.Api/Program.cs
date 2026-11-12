@@ -47,7 +47,6 @@ public static class Program
         app.MapAccountEndpoints();
         app.MapProfileEndpoints();
         app.MapMatchEndpoints();
-        app.MapSubmittedJobEndpoints();
         app.MapJobFeedEndpoints();
 
         await app.RunAsync();

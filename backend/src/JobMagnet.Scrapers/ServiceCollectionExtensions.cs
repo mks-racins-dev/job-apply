@@ -15,6 +15,7 @@ public static class ServiceCollectionExtensions
         services.Configure<ScraperOptions>(configuration.GetSection(ScraperOptions.SectionName));
         services.AddSingleton(TimeProvider.System);
 
+        AddSource<NvaSource>(services); // first: a few fast API calls, no crawl delay
         AddSource<VisiDarbiSource>(services);
         AddSource<CvLvSource>(services);
         AddSource<SsLvSource>(services);
