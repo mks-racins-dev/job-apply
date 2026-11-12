@@ -1,7 +1,7 @@
 @* Drawn on a 100×100 canvas, back to front: hair behind the head, shoulders, head, face, hair on top. *@
 <svg class="person-avatar @Class" viewBox="0 0 100 100" width="@Size" height="@Size"
      role="img" aria-label="@(Label ?? $"Avatar: {_avatar.Name}")">
-    @if (_avatar.Hair == AvatarCatalog.Hair.Long)
+    @if (_avatar.Hair == AvatarCatalog.Hair.Flowing)
     {
         <path d="M26 48 C24 24 36 14 50 14 C64 14 76 24 74 48 L77 76 C68 81 32 81 23 76 Z" fill="@_avatar.HairColor" />
     }
@@ -26,8 +26,8 @@
 
     @switch (_avatar.Hair)
     {
-        case AvatarCatalog.Hair.Short:
-        case AvatarCatalog.Hair.Long:
+        case AvatarCatalog.Hair.Cropped:
+        case AvatarCatalog.Hair.Flowing:
         case AvatarCatalog.Hair.Bun:
             <path d="M29 44 C27 25 37 17 50 17 C63 17 73 25 71 44 C68 33 60 28.5 50 28.5 C40 28.5 32 33 29 44 Z" fill="@_avatar.HairColor" />
             break;

@@ -3,9 +3,15 @@ using Microsoft.Extensions.Options;
 
 namespace JobMagnet.Scrapers.Sources;
 
-public abstract class PagedJobSource(HttpClient httpClient, IOptions<ScraperOptions> options, ILogger logger) : IJobSource
+public abstract partial class PagedJobSource(HttpClient httpClient, IOptions<ScraperOptions> options, ILogger logger) : IJobSource
 {
     private readonly ScraperOptions _options = options.Value;
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{Source} returned {StatusCode} for {Url}")]
+    private static partial void LogBadStatus(ILogger logger, string source, int statusCode, string url);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{Source} fetched {Count} listings")]
+    private static partial void LogFetched(ILogger logger, string source, int count);
 
     public abstract string Name { get; }
 
@@ -24,7 +30,7 @@ public abstract class PagedJobSource(HttpClient httpClient, IOptions<ScraperOpti
             using var response = await httpClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
-                logger.LogWarning("{Source} returned {StatusCode} for {Url}", Name, (int)response.StatusCode, url);
+                LogBadStatus(logger, Name, (int)response.StatusCode, url);
                 break;
             }
 
@@ -38,7 +44,7 @@ public abstract class PagedJobSource(HttpClient httpClient, IOptions<ScraperOpti
             jobs.AddRange(pageJobs);
         }
 
-        logger.LogInformation("{Source} fetched {Count} listings", Name, jobs.Count);
+        LogFetched(logger, Name, jobs.Count);
         return jobs;
     }
 

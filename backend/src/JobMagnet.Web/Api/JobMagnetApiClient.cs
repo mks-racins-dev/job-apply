@@ -59,7 +59,7 @@ public class JobMagnetApiClient(HttpClient http, AuthSession session)
         }
         catch (HttpRequestException)
         {
-            return ApiResult<T>.Failure("The Job Magnet API is not reachable.", 0);
+            return ApiResult.Failure<T>("The Job Magnet API is not reachable.", 0);
         }
 
         using (response)
@@ -73,16 +73,16 @@ public class JobMagnetApiClient(HttpClient http, AuthSession session)
 
             if (!response.IsSuccessStatusCode)
             {
-                return ApiResult<T>.Failure(await ReadErrorAsync(response, cancellationToken), statusCode);
+                return ApiResult.Failure<T>(await ReadErrorAsync(response, cancellationToken), statusCode);
             }
 
             if (response.StatusCode == HttpStatusCode.NoContent)
             {
-                return ApiResult<T>.Success(default, statusCode);
+                return ApiResult.Success<T>(default, statusCode);
             }
 
             var value = await response.Content.ReadFromJsonAsync<T>(JsonOptions, cancellationToken);
-            return ApiResult<T>.Success(value, statusCode);
+            return ApiResult.Success(value, statusCode);
         }
     }
 

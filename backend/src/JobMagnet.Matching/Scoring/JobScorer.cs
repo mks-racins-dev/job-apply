@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 
@@ -52,9 +53,9 @@ public class JobScorer(IClaudeJsonClient claude)
 
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 
-    private record ScoringResponse(List<ScoringResult> Results);
+    private sealed record ScoringResponse(List<ScoringResult> Results);
 
-    private record ScoringResult(string JobId, int Score, string Reason, List<string> MatchedSkills, List<string> MissingSkills);
+    private sealed record ScoringResult(string JobId, int Score, string Reason, List<string> MatchedSkills, List<string> MissingSkills);
 
     // Takes the profile, not its JSON, so only the anonymous scoring view can ever reach Claude.
     public async Task<IReadOnlyList<JobScore>> ScoreAsync(CandidateProfile profile, IReadOnlyList<Job> jobs, CancellationToken cancellationToken)
@@ -81,12 +82,12 @@ public class JobScorer(IClaudeJsonClient claude)
     private static string BuildPrompt(string profileJson, IReadOnlyList<Job> jobs)
     {
         var builder = new StringBuilder();
-        builder.AppendLine($"<profile>\n{profileJson}\n</profile>");
+        builder.AppendLine(CultureInfo.InvariantCulture, $"<profile>\n{profileJson}\n</profile>");
         builder.AppendLine("<jobs>");
         foreach (var job in jobs)
         {
             var description = job.Description.Length > DescriptionMaxLength ? job.Description[..DescriptionMaxLength] : job.Description;
-            builder.AppendLine($"""
+            builder.AppendLine(CultureInfo.InvariantCulture, $"""
                 <job id="{job.Id}">
                 Title: {job.Title}
                 Company: {job.Company ?? "unknown"}

@@ -9,7 +9,7 @@ public class AuthSession(ProtectedLocalStorage storage)
 {
     private const string StorageKey = "jobmagnet.session";
 
-    private record StoredSession(string Token, string Email);
+    private sealed record StoredSession(string Token, string Email);
 
     public string? Token { get; private set; }
 

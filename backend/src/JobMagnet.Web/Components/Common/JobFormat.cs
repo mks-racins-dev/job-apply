@@ -1,6 +1,6 @@
 using JobMagnet.Web.Api;
 
-namespace JobMagnet.Web.Components.Shared;
+namespace JobMagnet.Web.Components.Common;
 
 public static class JobFormat
 {

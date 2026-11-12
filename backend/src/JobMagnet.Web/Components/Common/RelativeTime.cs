@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace JobMagnet.Web.Components.Shared;
+namespace JobMagnet.Web.Components.Common;
 
 public static class RelativeTime
 {

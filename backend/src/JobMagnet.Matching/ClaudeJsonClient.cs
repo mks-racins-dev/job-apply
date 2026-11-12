@@ -7,10 +7,13 @@ using Microsoft.Extensions.Options;
 
 namespace JobMagnet.Matching;
 
-public class ClaudeJsonClient(AnthropicClient client, IOptions<ClaudeOptions> options, ILogger<ClaudeJsonClient> logger)
+public partial class ClaudeJsonClient(AnthropicClient client, IOptions<ClaudeOptions> options, ILogger<ClaudeJsonClient> logger)
     : IClaudeJsonClient
 {
     private const string RefusalStopReason = "refusal";
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Claude declined the request: {Category}")]
+    private static partial void LogRefusal(ILogger logger, object? category);
 
     public async Task<string?> CompleteJsonAsync(
         string systemPrompt,
@@ -35,7 +38,7 @@ public class ClaudeJsonClient(AnthropicClient client, IOptions<ClaudeOptions> op
 
         if (response.StopReason == RefusalStopReason)
         {
-            logger.LogWarning("Claude declined the request: {Category}", response.StopDetails?.Category);
+            LogRefusal(logger, response.StopDetails?.Category);
             return null;
         }
 

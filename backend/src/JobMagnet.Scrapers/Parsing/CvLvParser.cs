@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -37,7 +38,7 @@ public static partial class CvLvParser
 
     private static ScrapedJob ToJob(JsonElement vacancy)
     {
-        var id = vacancy.GetProperty("id").GetInt64().ToString();
+        var id = vacancy.GetProperty("id").GetInt64().ToString(CultureInfo.InvariantCulture);
         var isHourly = GetBool(vacancy, "hourlySalary");
 
         return new ScrapedJob(

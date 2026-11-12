@@ -5,11 +5,14 @@ using JobMagnet.Scrapers.Ingestion;
 
 namespace JobMagnet.Worker;
 
-public class PipelineBackgroundService(
+public partial class PipelineBackgroundService(
     IServiceScopeFactory scopeFactory,
     IOptions<ScraperOptions> options,
     ILogger<PipelineBackgroundService> logger) : BackgroundService
 {
+    [LoggerMessage(Level = LogLevel.Information, Message = "Ingestion finished: {Added} new jobs")]
+    private static partial void LogIngestionFinished(ILogger logger, int added);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var timer = new PeriodicTimer(options.Value.RunInterval);
@@ -26,6 +29,6 @@ public class PipelineBackgroundService(
         await using var scope = scopeFactory.CreateAsyncScope();
         var ingestion = scope.ServiceProvider.GetRequiredService<JobIngestionService>();
         var added = await ingestion.RunAsync(stoppingToken);
-        logger.LogInformation("Ingestion finished: {Added} new jobs", added);
+        LogIngestionFinished(logger, added);
     }
 }
