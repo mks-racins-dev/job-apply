@@ -1,0 +1,92 @@
+@if (Total > 0)
+{
+    <nav class="pager" aria-label="Pages">
+        <span class="muted">@FirstItem–@LastItem of @Total</span>
+
+        @if (PageCount > 1)
+        {
+            <div class="pager-buttons">
+                <button disabled="@(Page <= 1)" aria-label="Previous page" @onclick="() => GoAsync(Page - 1)">‹</button>
+                @foreach (var number in VisiblePages())
+                {
+                    if (number == Gap)
+                    {
+                        <span class="pager-gap">…</span>
+                    }
+                    else
+                    {
+                        <button class="@(number == Page ? "active" : null)" aria-current="@(number == Page ? "page" : null)"
+                                @onclick="() => GoAsync(number)">@number</button>
+                    }
+                }
+                <button disabled="@(Page >= PageCount)" aria-label="Next page" @onclick="() => GoAsync(Page + 1)">›</button>
+            </div>
+        }
+
+        <label class="page-size">
+            Rows
+            <select value="@PageSize" @onchange="OnPageSizeChangedAsync">
+                @foreach (var size in PageSizes)
+                {
+                    <option value="@size">@size</option>
+                }
+            </select>
+        </label>
+    </nav>
+}
+
+@code {
+    public static readonly int[] PageSizes = [10, 25, 50, 100];
+
+    private const int Gap = -1;
+    private const int NeighbourCount = 1;
+
+    [Parameter, EditorRequired]
+    public int Page { get; set; }
+
+    [Parameter, EditorRequired]
+    public int PageSize { get; set; }
+
+    [Parameter, EditorRequired]
+    public int Total { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnPage { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnPageSize { get; set; }
+
+    private int PageCount => Math.Max(1, (int)Math.Ceiling(Total / (double)PageSize));
+
+    private int FirstItem => ((Page - 1) * PageSize) + 1;
+
+    private int LastItem => Math.Min(Page * PageSize, Total);
+
+    // First, last, and the current page with its neighbours; gaps collapse into "…".
+    private IEnumerable<int> VisiblePages()
+    {
+        var previous = 0;
+        for (var number = 1; number <= PageCount; number++)
+        {
+            var isEdge = number == 1 || number == PageCount;
+            var isNear = Math.Abs(number - Page) <= NeighbourCount;
+            if (!isEdge && !isNear)
+            {
+                continue;
+            }
+
+            if (number - previous > 1)
+            {
+                yield return Gap;
+            }
+
+            yield return number;
+            previous = number;
+        }
+    }
+
+    private Task GoAsync(int number) => OnPage.InvokeAsync(Math.Clamp(number, 1, PageCount));
+
+    private Task OnPageSizeChangedAsync(ChangeEventArgs e) =>
+        int.TryParse(e.Value?.ToString(), out var size) ? OnPageSize.InvokeAsync(size) : Task.CompletedTask;
+}

@@ -1,0 +1,293 @@
+@page "/profile"
+@implements IDisposable
+@inject JobMagnetApiClient Api
+@inject NavigationManager Navigation
+@inject AuthSession Session
+
+<PageTitle>Profile · Job Magnet</PageTitle>
+
+@if (_loading)
+{
+    <p class="muted">Loading profile…</p>
+}
+else
+{
+    <div class="profile-layout">
+        <aside class="panel avatar-panel" aria-labelledby="avatar-title">
+            <div class="panel-head">
+                <h2 id="avatar-title">Avatar</h2>
+                <span class="panel-meta">@AvatarCatalog.Get(Session.AvatarId).Name</span>
+            </div>
+            <div class="avatar-preview">
+                <PersonAvatar AvatarId="Session.AvatarId" Size="120" />
+            </div>
+            <AvatarPicker />
+            <p class="panel-note">Shown in your record and at the center of your orbit. Saved to your account.</p>
+        </aside>
+
+        <section class="panel card">
+            <div class="card-head">
+                <h1>@(_isNew ? "Tell us about yourself" : "Your profile")</h1>
+                @if (!_isNew)
+                {
+                    <span class="badge ok">Matching on</span>
+                }
+            </div>
+            <p class="muted">A few minutes here and jobs start coming to you. The more you add, the sharper the matches.</p>
+
+            <EditForm Model="_profile" FormName="profile" class="profile-form">
+                <fieldset class="form-section">
+                    <legend>About you</legend>
+                    <div class="grid">
+                        <label>
+                            First name
+                            <InputText @bind-Value="_profile.FirstName" autocomplete="given-name" />
+                        </label>
+                        <label>
+                            <span>Last name <span class="muted">(optional)</span></span>
+                            <InputText @bind-Value="_profile.LastName" autocomplete="family-name" />
+                        </label>
+                    </div>
+                    <p class="form-hint">Your name is only shown to you. It is never sent to the AI that scores jobs.</p>
+                </fieldset>
+
+                <fieldset class="form-section">
+                    <legend>Experience</legend>
+                    <p class="form-hint">Roles you've had, most relevant first.</p>
+                    @foreach (var entry in _profile.Experience)
+                    {
+                        <div class="form-row">
+                            <label class="form-row-main">
+                                <span class="sr-only">Role</span>
+                                <InputText @bind-Value="entry.Role" placeholder="e.g. Accountant" />
+                            </label>
+                            <label class="form-row-side">
+                                <span class="sr-only">Years</span>
+                                <InputNumber @bind-Value="entry.Years" min="0" max="50" step="0.5" />
+                                <span class="muted">years</span>
+                            </label>
+                            <button type="button" class="icon-button" aria-label="Remove @entry.Role" @onclick="() => _profile.Experience.Remove(entry)">×</button>
+                        </div>
+                    }
+                    @if (_profile.Experience.Count < MaxExperience)
+                    {
+                        <button type="button" class="add-row" @onclick="() => _profile.Experience.Add(new ExperienceEntry())">+ Add a role</button>
+                    }
+                </fieldset>
+
+                <fieldset class="form-section">
+                    <legend>What's next</legend>
+                    <TagInput Label="Roles you're interested in" @bind-Values="_profile.InterestedRoles" Placeholder="e.g. Electronics technician, Bookkeeper" />
+                    <p class="form-hint">They can differ from your experience: we'll show those jobs too and weigh what transfers.</p>
+                    <TagInput Label="Don't show me" @bind-Values="_profile.Avoid" Placeholder="e.g. Sales, Call center" />
+                </fieldset>
+
+                <fieldset class="form-section">
+                    <legend>Skills</legend>
+                    <TagInput Label="Hard skills" @bind-Values="_profile.HardSkills" Placeholder="e.g. Excel, Welding, C#" />
+                    <TagInput Label="Soft skills" @bind-Values="_profile.SoftSkills" Placeholder="e.g. Teamwork, Customer care" />
+                </fieldset>
+
+                <fieldset class="form-section">
+                    <legend>Languages</legend>
+                    @foreach (var language in _profile.Languages)
+                    {
+                        <div class="form-row">
+                            <label class="form-row-main">
+                                <span class="sr-only">Language</span>
+                                <InputText @bind-Value="language.Language" list="language-options" placeholder="e.g. Latvian" />
+                            </label>
+                            <label class="form-row-side">
+                                <span class="sr-only">Level</span>
+                                <InputSelect @bind-Value="language.Level">
+                                    @foreach (var (value, label) in LanguageLevels)
+                                    {
+                                        <option value="@value">@label</option>
+                                    }
+                                </InputSelect>
+                            </label>
+                            <button type="button" class="icon-button" aria-label="Remove @language.Language" @onclick="() => _profile.Languages.Remove(language)">×</button>
+                        </div>
+                    }
+                    <button type="button" class="add-row" @onclick="() => _profile.Languages.Add(new LanguageSkill())">+ Add a language</button>
+                    <datalist id="language-options">
+                        @foreach (var name in CommonLanguages)
+                        {
+                            <option value="@name"></option>
+                        }
+                    </datalist>
+                </fieldset>
+
+                <fieldset class="form-section">
+                    <legend>Education &amp; courses</legend>
+                    <div class="grid">
+                        <label>
+                            Highest education
+                            <InputSelect @bind-Value="_profile.EducationLevel">
+                                <option value="">Not set</option>
+                                @foreach (var (value, label) in EducationLevels)
+                                {
+                                    <option value="@value">@label</option>
+                                }
+                            </InputSelect>
+                        </label>
+                        <label>
+                            <span>Field of study <span class="muted">(optional)</span></span>
+                            <InputText @bind-Value="_profile.EducationField" placeholder="e.g. Economics" />
+                        </label>
+                    </div>
+                    <TagInput Label="Courses & certificates" @bind-Values="_profile.Courses" Placeholder="e.g. Forklift licence, ACCA" />
+                </fieldset>
+
+                <fieldset class="form-section">
+                    <legend>Where &amp; how</legend>
+                    <TagInput Label="Cities you'd work in" @bind-Values="_profile.Cities" Placeholder="e.g. Rīga, Jelgava" />
+
+                    <div class="field">
+                        <span class="field-label">Work mode</span>
+                        <div class="toggle-chips">
+                            @foreach (var (value, label) in WorkModes)
+                            {
+                                <ToggleChip Label="@label" Checked="@_profile.WorkModes.Contains(value)" CheckedChanged="() => Toggle(_profile.WorkModes, value)" />
+                            }
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <span class="field-label">Employment</span>
+                        <div class="toggle-chips">
+                            @foreach (var (value, label) in EmploymentTypes)
+                            {
+                                <ToggleChip Label="@label" Checked="@_profile.EmploymentTypes.Contains(value)" CheckedChanged="() => Toggle(_profile.EmploymentTypes, value)" />
+                            }
+                        </div>
+                    </div>
+
+                    <label class="salary-field">
+                        <span>Minimum salary <span class="muted">(EUR / month, gross, optional)</span></span>
+                        <InputNumber @bind-Value="_profile.SalaryMin" min="0" step="100" />
+                    </label>
+
+                    <div class="field">
+                        <span class="field-label">Driving licence</span>
+                        <div class="toggle-chips">
+                            @foreach (var category in DrivingLicences)
+                            {
+                                <ToggleChip Label="@category" Checked="@_profile.DrivingLicences.Contains(category)" CheckedChanged="() => Toggle(_profile.DrivingLicences, category)" />
+                            }
+                        </div>
+                    </div>
+                </fieldset>
+
+                @if (_message is not null)
+                {
+                    <p class="@(_isError ? "error" : "success")">@_message</p>
+                }
+
+                <div class="actions">
+                    <button class="primary" type="button" @onclick="SaveAsync" disabled="@_saving">
+                        @(_saving ? "Saving…" : _isNew ? "Save & start matching" : "Save changes")
+                    </button>
+                </div>
+            </EditForm>
+        </section>
+    </div>
+}
+
+@code {
+    private const int MaxExperience = 5;
+
+    private static readonly (string Value, string Label)[] LanguageLevels =
+        [("basic", "Basic"), ("conversational", "Conversational"), ("fluent", "Fluent"), ("native", "Native")];
+
+    private static readonly (string Value, string Label)[] EducationLevels =
+        [("secondary", "Secondary school"), ("vocational", "Vocational"), ("bachelor", "Bachelor's"), ("master", "Master's"), ("doctorate", "Doctorate")];
+
+    private static readonly (string Value, string Label)[] WorkModes =
+        [("onsite", "On-site"), ("hybrid", "Hybrid"), ("remote", "Remote")];
+
+    private static readonly (string Value, string Label)[] EmploymentTypes =
+        [("full-time", "Full-time"), ("part-time", "Part-time"), ("shifts", "Shifts")];
+
+    private static readonly string[] DrivingLicences = ["A", "B", "BE", "C1", "C", "CE", "D", "DE"];
+
+    private static readonly string[] CommonLanguages =
+        ["Latvian", "English", "Russian", "Lithuanian", "Estonian", "German", "Polish", "Ukrainian", "French", "Swedish", "Norwegian", "Finnish", "Spanish"];
+
+    private ProfileData _profile = NewProfile();
+    private bool _isNew = true;
+    private bool _loading = true;
+    private bool _saving;
+    private string? _message;
+    private bool _isError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Session.Changed += OnSessionChanged;
+        var result = await Api.GetProfileAsync();
+        if (result is { IsSuccess: true, Value: { } response })
+        {
+            _profile = response.Data;
+            _isNew = false;
+        }
+        else if (result.StatusCode != StatusCodes.Status404NotFound)
+        {
+            _message = result.Error;
+            _isError = true;
+        }
+
+        _loading = false;
+    }
+
+    // A blank form with one empty row each, so it's obvious what to type where.
+    private static ProfileData NewProfile() => new()
+    {
+        Experience = [new ExperienceEntry()],
+        Languages = [new LanguageSkill()],
+        WorkModes = ["onsite"],
+        EmploymentTypes = ["full-time"]
+    };
+
+    private static void Toggle(List<string> values, string value)
+    {
+        if (!values.Remove(value))
+        {
+            values.Add(value);
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _message = null;
+
+        var wasNew = _isNew;
+        _profile.EducationLevel = string.IsNullOrWhiteSpace(_profile.EducationLevel) ? null : _profile.EducationLevel;
+        var result = await Api.SaveProfileAsync(_profile);
+        _saving = false;
+
+        if (result is not { IsSuccess: true, Value: { } saved })
+        {
+            _message = result.Error;
+            _isError = true;
+            return;
+        }
+
+        _isNew = false;
+        if (wasNew)
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        // The server trims and drops empty rows; show what was actually saved.
+        _profile = saved.Data;
+        _message = "Saved. New matches will use the updated profile.";
+        _isError = false;
+    }
+
+    // The avatar can change from the account menu while this page is open.
+    private void OnSessionChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Session.Changed -= OnSessionChanged;
+}

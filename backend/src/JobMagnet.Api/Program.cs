@@ -6,8 +6,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 using JobMagnet.Api.Auth;
-using JobMagnet.Api.Cv;
+using JobMagnet.Api.Jobs;
 using JobMagnet.Api.Matches;
+using JobMagnet.Api.Profiles;
 using JobMagnet.Data;
 using JobMagnet.Data.Entities;
 using JobMagnet.Matching;
@@ -43,8 +44,10 @@ public static class Program
 
         app.MapHealthChecks("/health");
         app.MapAuthEndpoints();
-        app.MapCvEndpoints();
+        app.MapAccountEndpoints();
+        app.MapProfileEndpoints();
         app.MapMatchEndpoints();
+        app.MapJobFeedEndpoints();
 
         await app.RunAsync();
     }

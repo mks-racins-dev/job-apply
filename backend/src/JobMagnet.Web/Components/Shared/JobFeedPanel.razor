@@ -1,0 +1,43 @@
+<section class="panel" aria-labelledby="feed-title">
+    <div class="panel-head">
+        <h2 id="feed-title">Job feed</h2>
+        <span class="panel-meta" title="@Exact(Feed.LastCheckedAt)">Checked @RelativeTime.Format(Feed.LastCheckedAt, Now)</span>
+    </div>
+
+    <p class="feed-latest">
+        <span class="feed-pulse @(IsFresh ? "fresh" : null)" aria-hidden="true"></span>
+        New jobs @RelativeTime.Format(Feed.LastAddedAt, Now)
+    </p>
+
+    @if (Feed.Sources.Count > 0)
+    {
+        <ul class="feed-sources">
+            @foreach (var source in Feed.Sources)
+            {
+                <li>
+                    <span class="feed-source">@source.Source</span>
+                    <span class="feed-added @(source.AddedLastDay > 0 ? "has-new" : null)" title="New jobs in the last 24 hours">+@source.AddedLastDay in 24h</span>
+                    <span class="feed-when" title="@Exact(source.LastAddedAt)">@RelativeTime.Format(source.LastAddedAt, Now)</span>
+                </li>
+            }
+        </ul>
+    }
+
+    <p class="panel-note">Sites are checked every 2 hours; new jobs are scored within minutes.</p>
+</section>
+
+@code {
+    // A pulse only when something genuinely new arrived recently, so it means something when it shows.
+    private static readonly TimeSpan FreshWindow = TimeSpan.FromHours(3);
+
+    [Parameter, EditorRequired]
+    public JobFeed Feed { get; set; } = default!;
+
+    [Parameter]
+    public DateTimeOffset Now { get; set; } = DateTimeOffset.UtcNow;
+
+    private bool IsFresh => Feed.LastAddedAt is { } at && Now - at < FreshWindow;
+
+    private static string? Exact(DateTimeOffset? at) =>
+        at?.ToLocalTime().ToString("dd.MM.yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+}

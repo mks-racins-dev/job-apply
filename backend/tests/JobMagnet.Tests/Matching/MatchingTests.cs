@@ -1,27 +1,25 @@
 using JobMagnet.Data.Entities;
+using JobMagnet.Matching.Profiles;
 using JobMagnet.Matching.Scoring;
 
 namespace JobMagnet.Tests.Matching;
 
 public class MatchingTests
 {
-    private const string ProfileJson = """
-        {
-          "headline": "Backend developer",
-          "roles": ["Backend developer"],
-          "skills": ["C#", ".NET", "PostgreSQL", "Docker"],
-          "seniority": "senior",
-          "yearsOfExperience": 7,
-          "languages": ["lv", "en"],
-          "location": "Rīga",
-          "preferences": { "remote": true, "cities": ["Rīga"], "salaryMin": 3000 }
-        }
-        """;
+    private static readonly CandidateProfile Profile = new()
+    {
+        FirstName = "Jānis",
+        Experience = [new ExperienceEntry { Role = "Backend developer", Years = 7 }],
+        HardSkills = ["C#", ".NET", "PostgreSQL", "Docker"],
+        Cities = ["Rīga"],
+        WorkModes = ["remote"],
+        SalaryMin = 3000
+    };
 
     [Fact]
     public void ProfileTerms_ReadsSkillsRolesAndCities()
     {
-        var terms = ProfileTerms.FromJson(ProfileJson);
+        var terms = ProfileTerms.FromProfile(Profile);
 
         Assert.Contains("PostgreSQL", terms.Keywords);
         Assert.Contains("Backend developer", terms.Keywords);
@@ -36,9 +34,18 @@ public class MatchingTests
         var weak = CreateJob("Docker administrator", "Linux servers", "Jelgava");
         var unrelated = CreateJob("Sētnieks", "Teritorijas uzkopšana", "Rīga");
 
-        var candidates = CandidatePrefilter.SelectCandidates(ProfileTerms.FromJson(ProfileJson), [weak, unrelated, strong], 10);
+        var candidates = CandidatePrefilter.SelectCandidates(ProfileTerms.FromProfile(Profile), [weak, unrelated, strong], 10);
 
         Assert.Equal([strong, weak], candidates);
+    }
+
+    [Fact]
+    public void Prefilter_MatchesSingleRoleWords()
+    {
+        var terms = ProfileTerms.FromProfile(new CandidateProfile { Experience = [new ExperienceEntry { Role = "QA Engineer" }] });
+        var job = CreateJob("Quality Assurance Engineer", string.Empty, null);
+
+        Assert.Single(CandidatePrefilter.SelectCandidates(terms, [job], 10));
     }
 
     [Fact]
@@ -46,7 +53,30 @@ public class MatchingTests
     {
         var jobs = Enumerable.Range(0, 5).Select(i => CreateJob($"PostgreSQL DBA {i}", string.Empty, null)).ToList();
 
-        Assert.Equal(2, CandidatePrefilter.SelectCandidates(ProfileTerms.FromJson(ProfileJson), jobs, 2).Count);
+        Assert.Equal(2, CandidatePrefilter.SelectCandidates(ProfileTerms.FromProfile(Profile), jobs, 2).Count);
+    }
+
+    [Fact]
+    public void Prefilter_IncludesInterestedRolesOutsideExperience()
+    {
+        var careerChange = new CandidateProfile
+        {
+            Experience = [new ExperienceEntry { Role = "Software developer", Years = 5 }],
+            InterestedRoles = ["Accountant"]
+        };
+        var job = CreateJob("Accountant", "Grāmatvedība", "Rīga");
+
+        Assert.Single(CandidatePrefilter.SelectCandidates(ProfileTerms.FromProfile(careerChange), [job], 10));
+    }
+
+    [Fact]
+    public void Prefilter_DropsJobsWhoseTitleIsAvoided()
+    {
+        var profile = new CandidateProfile { HardSkills = ["Excel"], Avoid = ["Sales"] };
+        var sales = CreateJob("Sales manager", "Excel reports", null);
+        var analyst = CreateJob("Data analyst", "Excel reports for the sales team", null);
+
+        Assert.Equal([analyst], CandidatePrefilter.SelectCandidates(ProfileTerms.FromProfile(profile), [sales, analyst], 10));
     }
 
     [Fact]

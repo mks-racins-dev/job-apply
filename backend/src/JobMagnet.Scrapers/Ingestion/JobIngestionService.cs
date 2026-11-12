@@ -53,7 +53,7 @@ public class JobIngestionService(
 
         var hashes = scraped.Select(DedupeHasher.Compute).ToList();
         var knownHashes = await db.Jobs
-            .Where(j => j.Source != source && j.IsActive && hashes.Contains(j.DedupeHash))
+            .Where(j => j.Source != source && j.IsActive && j.SubmittedByUserId == null && hashes.Contains(j.DedupeHash))
             .Select(j => j.DedupeHash)
             .ToHashSetAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -66,6 +66,7 @@ public class JobIngestionService(
             {
                 job.LastSeenAt = now;
                 job.IsActive = true;
+                job.Deadline = item.Deadline ?? job.Deadline;
                 continue;
             }
 
@@ -89,7 +90,7 @@ public class JobIngestionService(
     {
         var cutoff = timeProvider.GetUtcNow() - options.Value.InactiveAfter;
         await db.Jobs
-            .Where(j => j.IsActive && j.LastSeenAt < cutoff)
+            .Where(j => j.IsActive && j.SubmittedByUserId == null && j.LastSeenAt < cutoff)
             .ExecuteUpdateAsync(s => s.SetProperty(j => j.IsActive, false), cancellationToken)
             .ConfigureAwait(false);
     }
@@ -106,6 +107,8 @@ public class JobIngestionService(
         SalaryMax = item.SalaryMax,
         Description = item.Description,
         PostedAt = item.PostedAt,
+        Deadline = item.Deadline,
+        FirstSeenAt = now,
         LastSeenAt = now,
         DedupeHash = hash
     };

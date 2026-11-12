@@ -1,0 +1,98 @@
+@implements IDisposable
+@inject AuthSession Session
+@inject NavigationManager Navigation
+
+<div class="account-menu @(_open ? "open" : null)" @onkeydown="OnKeyDown">
+    <button class="account-trigger" aria-haspopup="true" aria-expanded="@(_open ? "true" : "false")"
+            aria-controls="account-panel" @onclick="Toggle">
+        <PersonAvatar AvatarId="Session.AvatarId" Size="30" Label="Your account" />
+        <span class="account-chevron" aria-hidden="true"></span>
+    </button>
+
+    @if (_open)
+    {
+        <div class="account-backdrop" @onclick="Close"></div>
+        <div id="account-panel" class="account-panel" role="menu">
+            <div class="account-head">
+                <PersonAvatar AvatarId="Session.AvatarId" Size="48" />
+                <div class="account-id">
+                    <span class="account-name">@AvatarCatalog.Get(Session.AvatarId).Name</span>
+                    <span class="account-email">@Session.Email</span>
+                </div>
+            </div>
+
+            <nav class="account-links">
+                <a role="menuitem" href="/profile">
+                    <span>Profile</span>
+                    <span class="account-hint">What we match on</span>
+                </a>
+                <button role="menuitem" class="account-row" aria-expanded="@(_pickingAvatar ? "true" : "false")"
+                        @onclick="() => _pickingAvatar = !_pickingAvatar">
+                    <span>Change avatar</span>
+                    <span class="account-hint">@(_pickingAvatar ? "Done" : "16 to choose from")</span>
+                </button>
+            </nav>
+
+            @if (_pickingAvatar)
+            {
+                <div class="account-avatars">
+                    <AvatarPicker />
+                </div>
+            }
+
+            <button role="menuitem" class="account-row account-signout" @onclick="SignOutAsync">Sign out</button>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _open;
+    private bool _pickingAvatar;
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+        Session.Changed += OnSessionChanged;
+    }
+
+    private void Toggle()
+    {
+        _open = !_open;
+        _pickingAvatar = false;
+    }
+
+    private void Close()
+    {
+        _open = false;
+        _pickingAvatar = false;
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            Close();
+        }
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        Close();
+        InvokeAsync(StateHasChanged);
+    }
+
+    // Keeps the trigger in step when the avatar changes from inside the picker.
+    private void OnSessionChanged() => InvokeAsync(StateHasChanged);
+
+    private async Task SignOutAsync()
+    {
+        Close();
+        await Session.SignOutAsync();
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+        Session.Changed -= OnSessionChanged;
+    }
+}

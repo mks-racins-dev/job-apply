@@ -10,4 +10,5 @@ public record ScrapedJob(
     decimal? SalaryMin,
     decimal? SalaryMax,
     string Description,
-    DateTimeOffset? PostedAt);
+    DateTimeOffset? PostedAt,
+    DateTimeOffset? Deadline = null);

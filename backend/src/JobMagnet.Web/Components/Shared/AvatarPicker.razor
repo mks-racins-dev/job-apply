@@ -1,0 +1,49 @@
+@inject JobMagnetApiClient Api
+@inject AuthSession Session
+
+<div class="avatar-picker" role="radiogroup" aria-label="Choose your avatar">
+    @for (var i = 0; i < AvatarCatalog.All.Count; i++)
+    {
+        var id = i;
+        var selected = id == Session.AvatarId;
+        <button type="button" role="radio" aria-checked="@(selected ? "true" : "false")"
+                class="avatar-option @(selected ? "selected" : null)"
+                title="@AvatarCatalog.All[id].Name"
+                disabled="@_saving"
+                @onclick="() => ChooseAsync(id)">
+            <PersonAvatar AvatarId="id" Size="44" Label="@AvatarCatalog.All[id].Name" />
+        </button>
+    }
+</div>
+@if (_error is not null)
+{
+    <p class="error">@_error</p>
+}
+
+@code {
+    private bool _saving;
+    private string? _error;
+
+    // Optimistic: the avatar changes at once and reverts only if the save fails.
+    private async Task ChooseAsync(int id)
+    {
+        var previous = Session.AvatarId;
+        if (id == previous)
+        {
+            return;
+        }
+
+        _saving = true;
+        _error = null;
+        Session.SetAvatar(id);
+
+        var result = await Api.SetAvatarAsync(id);
+        if (!result.IsSuccess)
+        {
+            Session.SetAvatar(previous);
+            _error = result.Error;
+        }
+
+        _saving = false;
+    }
+}

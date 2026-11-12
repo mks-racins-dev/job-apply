@@ -1,0 +1,79 @@
+@page "/login"
+@inject JobMagnetApiClient Api
+@inject AuthSession Session
+@inject NavigationManager Navigation
+
+<PageTitle>Sign in · Job Magnet</PageTitle>
+
+<section class="card narrow">
+    <h1>@(_isRegister ? "Create your account" : "Welcome back")</h1>
+    <p class="muted">Tell us what you do and what you want next, and jobs from the Latvian market come to you.</p>
+
+    <EditForm Model="_form" OnValidSubmit="SubmitAsync" FormName="login">
+        <DataAnnotationsValidator />
+        <label>
+            Email
+            <InputText type="email" @bind-Value="_form.Email" autocomplete="email" />
+        </label>
+        <label>
+            Password
+            <InputText type="password" @bind-Value="_form.Password"
+                       autocomplete="@(_isRegister ? "new-password" : "current-password")" />
+        </label>
+        <ValidationSummary />
+
+        @if (_error is not null)
+        {
+            <p class="error">@_error</p>
+        }
+
+        <button class="primary" type="submit" disabled="@_busy">
+            @(_busy ? "Please wait…" : _isRegister ? "Create account" : "Sign in")
+        </button>
+    </EditForm>
+
+    <p class="switch">
+        @(_isRegister ? "Already have an account?" : "New here?")
+        <button class="link" @onclick="ToggleMode">@(_isRegister ? "Sign in" : "Create an account")</button>
+    </p>
+</section>
+
+@code {
+    private readonly LoginForm _form = new();
+    private bool _isRegister;
+    private bool _busy;
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        if (Session.IsSignedIn)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private void ToggleMode()
+    {
+        _isRegister = !_isRegister;
+        _error = null;
+    }
+
+    private async Task SubmitAsync()
+    {
+        _busy = true;
+        _error = null;
+
+        var credentials = new Credentials(_form.Email.Trim(), _form.Password);
+        var result = _isRegister ? await Api.RegisterAsync(credentials) : await Api.LoginAsync(credentials);
+
+        if (result is { IsSuccess: true, Value: { } token })
+        {
+            await Session.SignInAsync(token.Token, credentials.Email);
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        _error = result.StatusCode == StatusCodes.Status409Conflict ? "An account with this email already exists." : result.Error;
+        _busy = false;
+    }
+}

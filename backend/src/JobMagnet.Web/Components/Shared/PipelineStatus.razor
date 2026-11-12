@@ -1,0 +1,68 @@
+@using System.Globalization
+
+<section class="panel" aria-labelledby="pipeline-title">
+    <div class="panel-head">
+        <h2 id="pipeline-title">Pipeline</h2>
+        <span class="panel-meta">Score @MinScore+</span>
+    </div>
+
+    <p class="pipeline-total"><strong>@Total</strong> @(Total == 1 ? "match" : "matches")</p>
+
+    @* One stacked bar, read like a storage meter: each segment is a share of all matches. *@
+    <div class="stack-bar" role="img" aria-label="@Description">
+        @foreach (var row in Rows.Where(r => r.Count > 0))
+        {
+            <span class="stack-seg @row.Tone" style="width:@Percent(row.Count)%"></span>
+        }
+    </div>
+
+    <ul class="legend">
+        @foreach (var row in Rows)
+        {
+            <li>
+                <span class="legend-dot @row.Tone" aria-hidden="true"></span>
+                <span class="legend-label">@row.Label</span>
+                <span class="legend-value">@row.Count</span>
+            </li>
+        }
+    </ul>
+
+    @if (Total == 0)
+    {
+        <p class="panel-note">Nothing at this score yet. New jobs are scored every few minutes.</p>
+    }
+    else if (Interested == 0)
+    {
+        <p class="panel-note">Mark jobs as Interested to keep them close.</p>
+    }
+</section>
+
+@code {
+    private const int FullWidth = 100;
+
+    [Parameter]
+    public int Total { get; set; }
+
+    [Parameter]
+    public int New { get; set; }
+
+    [Parameter]
+    public int Interested { get; set; }
+
+    [Parameter]
+    public int MinScore { get; set; }
+
+    private record Row(string Label, int Count, string Tone);
+
+    private IEnumerable<Row> Rows =>
+    [
+        new("New", New, "tone-new"),
+        new("Interested", Interested, "tone-ok"),
+        new("Reviewed", Math.Max(Total - New - Interested, 0), "tone-seen")
+    ];
+
+    private string Description => string.Join(", ", Rows.Select(r => $"{r.Count} {r.Label.ToLowerInvariant()}"));
+
+    private string Percent(int count) =>
+        Total == 0 ? "0" : (count * FullWidth / (double)Total).ToString("0.##", CultureInfo.InvariantCulture);
+}

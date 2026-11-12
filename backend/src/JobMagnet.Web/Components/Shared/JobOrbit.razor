@@ -1,0 +1,53 @@
+@using System.Globalization
+
+<div class="orbit" role="list" aria-label="Matched jobs">
+    <div class="orbit-ring ring-1"></div>
+    <div class="orbit-ring ring-2"></div>
+    <div class="orbit-ring ring-3"></div>
+
+    <div class="orbit-center">
+        <span class="orbit-avatar"><PersonAvatar AvatarId="AvatarId" Size="84" Label="You" /></span>
+        <span class="center-label">You</span>
+    </div>
+
+    @for (var i = 0; i < Matches.Count; i++)
+    {
+        var match = Matches[i];
+        var place = OrbitLayout.Place(match, i, Matches.Count, MinScore);
+        <button @key="match.Id"
+                role="listitem"
+                class="bubble @StatusClass(match) @(match.Id == SelectedId ? "selected" : null)"
+                style="left:@Css(place.LeftPercent)%;top:@Css(place.TopPercent)%;width:@Css(place.SizePercent)%;animation-delay:@(i * 60)ms"
+                title="@match.Job.Title"
+                @onclick="() => OnSelect.InvokeAsync(match)">
+            <span class="bubble-score">@match.Score</span>
+            <span class="bubble-title">@match.Job.Title</span>
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public List<MatchItem> Matches { get; set; } = [];
+
+    [Parameter]
+    public int MinScore { get; set; }
+
+    [Parameter]
+    public Guid? SelectedId { get; set; }
+
+    [Parameter]
+    public int AvatarId { get; set; }
+
+    [Parameter]
+    public EventCallback<MatchItem> OnSelect { get; set; }
+
+    private static string StatusClass(MatchItem match) => match.Status switch
+    {
+        MatchStatus.New => "is-new",
+        MatchStatus.Interested => "is-interested",
+        _ => string.Empty
+    };
+
+    private static string Css(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+}

@@ -26,9 +26,18 @@ public class Job
 
     public DateTimeOffset? PostedAt { get; set; }
 
+    // Application deadline, when the source publishes one (currently NVA only).
+    public DateTimeOffset? Deadline { get; set; }
+
+    // When we first scraped (or the user pasted) it, as opposed to the site's own posting date.
+    public DateTimeOffset FirstSeenAt { get; set; }
+
     public DateTimeOffset LastSeenAt { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    // Set for jobs a user pasted in themselves (e.g. from LinkedIn): only that user is matched against them.
+    public Guid? SubmittedByUserId { get; set; }
 
     // Content hash shared by the same listing posted on several sites.
     public required string DedupeHash { get; set; }

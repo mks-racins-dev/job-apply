@@ -1,0 +1,113 @@
+<div class="table-wrap">
+    <table class="jobs">
+        <thead>
+            <tr>
+                @foreach (var column in Columns)
+                {
+                    <th class="@column.CssClass" aria-sort="@AriaSort(column.Key)">
+                        <button class="sort" @onclick="() => SortByAsync(column.Key)">
+                            @column.Label <span class="sort-arrow">@Arrow(column.Key)</span>
+                        </button>
+                    </th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var match in Matches)
+            {
+                <tr @key="match.Id"
+                    class="@(match.Id == SelectedId ? "selected" : null) @(match.Status == MatchStatus.New ? "is-new" : null)"
+                    tabindex="0"
+                    @onclick="() => OnSelect.InvokeAsync(match)"
+                    @onkeydown="e => OnRowKeyAsync(e, match)">
+                    <td class="num"><span class="score score-@ScoreBand(match.Score)">@match.Score</span></td>
+                    <td class="title-cell">
+                        <span class="job-title">@match.Job.Title</span>
+                        @if (match.Status == MatchStatus.Interested)
+                        {
+                            <span class="star" title="Interested">★</span>
+                        }
+                    </td>
+                    <td>@(match.Job.Company ?? "—")</td>
+                    <td class="hide-sm">@(match.Job.City ?? "—")</td>
+                    <td class="hide-sm nowrap">@(HasSalary(match.Job) ? JobFormat.Salary(match.Job) : "—")</td>
+                    <td class="hide-sm nowrap">@(match.Job.Deadline?.ToString("dd.MM.yyyy") ?? "—")</td>
+                    <td class="hide-sm">@JobFormat.Source(match.Job)</td>
+                    <td class="hide-sm nowrap muted">@match.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private const int StrongScore = 75;
+    private const int FairScore = 50;
+
+    // Keys match the API's sort parameter.
+    public const string ScoreKey = "score";
+
+    private record Column(string Key, string Label, string? CssClass = null);
+
+    private static readonly Column[] Columns =
+    [
+        new(ScoreKey, "Score", "num"),
+        new("title", "Job"),
+        new("company", "Company"),
+        new("city", "City", "hide-sm"),
+        new("salary", "Salary", "hide-sm"),
+        new("deadline", "Deadline", "hide-sm"),
+        new("source", "Source", "hide-sm"),
+        new("added", "Added", "hide-sm")
+    ];
+
+    // Numbers and dates read best biggest/newest first; text reads best A→Z.
+    private static readonly HashSet<string> DescendingFirst = [ScoreKey, "salary", "added"];
+
+    public static bool IsKnownSort(string? key) => Columns.Any(c => c.Key == key);
+
+    public static bool DefaultDescending(string key) => DescendingFirst.Contains(key);
+
+    [Parameter, EditorRequired]
+    public List<MatchItem> Matches { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public string Sort { get; set; } = ScoreKey;
+
+    [Parameter, EditorRequired]
+    public bool Descending { get; set; }
+
+    [Parameter]
+    public Guid? SelectedId { get; set; }
+
+    [Parameter]
+    public EventCallback<MatchItem> OnSelect { get; set; }
+
+    // Raised with the new sort key and direction.
+    [Parameter]
+    public EventCallback<(string Sort, bool Descending)> OnSort { get; set; }
+
+    private Task SortByAsync(string key) =>
+        OnSort.InvokeAsync(Sort == key ? (key, !Descending) : (key, DefaultDescending(key)));
+
+    private string Arrow(string key) => Sort != key ? string.Empty : Descending ? "↓" : "↑";
+
+    private string AriaSort(string key) => Sort != key ? "none" : Descending ? "descending" : "ascending";
+
+    private static bool HasSalary(JobItem job) => job.SalaryMin is not null || job.SalaryMax is not null;
+
+    private static string ScoreBand(int score) => score switch
+    {
+        >= StrongScore => "high",
+        >= FairScore => "mid",
+        _ => "low"
+    };
+
+    private async Task OnRowKeyAsync(KeyboardEventArgs e, MatchItem match)
+    {
+        if (e.Key is "Enter" or " ")
+        {
+            await OnSelect.InvokeAsync(match);
+        }
+    }
+}

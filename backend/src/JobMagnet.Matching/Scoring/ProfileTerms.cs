@@ -1,43 +1,29 @@
-using System.Text.Json;
+using JobMagnet.Matching.Profiles;
 
 namespace JobMagnet.Matching.Scoring;
 
-public record ProfileTerms(IReadOnlyList<string> Keywords, IReadOnlyList<string> Cities, bool Remote)
+public record ProfileTerms(IReadOnlyList<string> Keywords, IReadOnlyList<string> Cities, bool Remote, IReadOnlyList<string> Avoid)
 {
-    public static ProfileTerms FromJson(string profileJson)
+    private const int MinRoleWordLength = 4;
+
+    public static ProfileTerms FromProfile(CandidateProfile profile)
     {
-        using var document = JsonDocument.Parse(profileJson);
-        var root = document.RootElement;
+        // Past and wanted roles count the same, so someone moving from IT to accounting still sees accounting jobs.
+        var roles = profile.Experience.Select(e => e.Role).Concat(profile.InterestedRoles).ToList();
 
-        var keywords = ReadStrings(root, "skills").Concat(ReadStrings(root, "roles")).ToList();
-        var cities = new List<string>();
-        var remote = false;
+        // Whole role phrases rarely appear verbatim ("QA Engineer" vs "Quality Assurance Engineer"),
+        // so the distinctive single words of each role count as keywords too.
+        var roleWords = roles
+            .SelectMany(role => role.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            .Where(word => word.Length >= MinRoleWordLength);
 
-        if (root.TryGetProperty("preferences", out var preferences) && preferences.ValueKind == JsonValueKind.Object)
-        {
-            cities.AddRange(ReadStrings(preferences, "cities"));
-            remote = preferences.TryGetProperty("remote", out var remoteValue) && remoteValue.ValueKind == JsonValueKind.True;
-        }
-
-        if (root.TryGetProperty("location", out var location) && location.ValueKind == JsonValueKind.String)
-        {
-            cities.Add(location.GetString()!);
-        }
-
-        return new ProfileTerms(keywords, cities, remote);
-    }
-
-    private static IEnumerable<string> ReadStrings(JsonElement element, string name)
-    {
-        if (!element.TryGetProperty(name, out var array) || array.ValueKind != JsonValueKind.Array)
-        {
-            return [];
-        }
-
-        return array.EnumerateArray()
-            .Where(item => item.ValueKind == JsonValueKind.String)
-            .Select(item => item.GetString()!)
-            .Where(value => !string.IsNullOrWhiteSpace(value))
+        var keywords = profile.HardSkills
+            .Concat(profile.Courses)
+            .Concat(roles)
+            .Concat(roleWords)
+            .Concat(profile.EducationField is { } field ? [field] : [])
             .ToList();
+
+        return new ProfileTerms(keywords, profile.Cities, profile.WorkModes.Contains("remote"), profile.Avoid);
     }
 }
