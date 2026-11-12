@@ -2,8 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>dotnet-JobMagnet.Worker-1329dabd-129e-470a-803f-c18a04c15065</UserSecretsId>
   </PropertyGroup>
 
