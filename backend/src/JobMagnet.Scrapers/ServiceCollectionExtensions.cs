@@ -1,8 +1,7 @@
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-
 using JobMagnet.Scrapers.Ingestion;
 using JobMagnet.Scrapers.Sources;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace JobMagnet.Scrapers;
 

@@ -1,10 +1,4 @@
 using System.Text.Json.Serialization;
-
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-
 using JobMagnet.Api.Auth;
 using JobMagnet.Api.Jobs;
 using JobMagnet.Api.Matches;
@@ -12,6 +6,10 @@ using JobMagnet.Api.Profiles;
 using JobMagnet.Data;
 using JobMagnet.Data.Entities;
 using JobMagnet.Matching;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace JobMagnet.Api;
 

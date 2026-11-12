@@ -1,9 +1,8 @@
+using JobMagnet.Data;
+using JobMagnet.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-
-using JobMagnet.Data;
-using JobMagnet.Data.Entities;
 
 namespace JobMagnet.Scrapers.Ingestion;
 

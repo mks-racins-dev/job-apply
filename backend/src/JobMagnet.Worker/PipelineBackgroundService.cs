@@ -1,7 +1,6 @@
-using Microsoft.Extensions.Options;
-
 using JobMagnet.Scrapers;
 using JobMagnet.Scrapers.Ingestion;
+using Microsoft.Extensions.Options;
 
 namespace JobMagnet.Worker;
 

@@ -1,6 +1,5 @@
-using Microsoft.Extensions.Options;
-
 using JobMagnet.Matching;
+using Microsoft.Extensions.Options;
 
 namespace JobMagnet.Worker;
 
