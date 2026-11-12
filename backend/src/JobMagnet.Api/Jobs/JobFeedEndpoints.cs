@@ -1,6 +1,5 @@
-using Microsoft.EntityFrameworkCore;
-
 using JobMagnet.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace JobMagnet.Api.Jobs;
 

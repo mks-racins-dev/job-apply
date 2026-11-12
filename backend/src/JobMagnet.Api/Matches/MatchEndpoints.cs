@@ -1,10 +1,8 @@
 using System.Security.Claims;
-
-using Microsoft.EntityFrameworkCore;
-
 using JobMagnet.Api.Auth;
 using JobMagnet.Data;
 using JobMagnet.Data.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace JobMagnet.Api.Matches;
 

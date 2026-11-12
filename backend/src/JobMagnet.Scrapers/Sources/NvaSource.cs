@@ -1,7 +1,6 @@
+using JobMagnet.Scrapers.Parsing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-
-using JobMagnet.Scrapers.Parsing;
 
 namespace JobMagnet.Scrapers.Sources;
 

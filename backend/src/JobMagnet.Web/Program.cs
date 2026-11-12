@@ -1,8 +1,7 @@
-using Microsoft.AspNetCore.DataProtection;
-
 using JobMagnet.Web.Api;
 using JobMagnet.Web.Components;
 using JobMagnet.Web.Session;
+using Microsoft.AspNetCore.DataProtection;
 
 namespace JobMagnet.Web;
 

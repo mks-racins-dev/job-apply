@@ -1,8 +1,7 @@
 using Anthropic;
+using JobMagnet.Matching.Scoring;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-
-using JobMagnet.Matching.Scoring;
 
 namespace JobMagnet.Matching;
 

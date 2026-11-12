@@ -1,12 +1,10 @@
 using System.Security.Claims;
 using System.Text.Json;
-
-using Microsoft.EntityFrameworkCore;
-
 using JobMagnet.Api.Auth;
 using JobMagnet.Data;
 using JobMagnet.Data.Entities;
 using JobMagnet.Matching.Profiles;
+using Microsoft.EntityFrameworkCore;
 
 namespace JobMagnet.Api.Profiles;
 
