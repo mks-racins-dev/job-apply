@@ -1,0 +1,20 @@
+name: Deploy
+
+on:
+  workflow_call:
+    # secrets:
+    #   DEPLOY_KEY:
+    #     required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: api-ubuntu-latest
+          path: publish
+      - run: echo "deploy ./publish"
+        # env:
+        #   API_KEY: ${{ secrets.DEPLOY_KEY }}
