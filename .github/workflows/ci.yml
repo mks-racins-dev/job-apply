@@ -1,0 +1,64 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Build & Test (${{ matrix.os }}) 
+    strategy:
+      fail-fast: false # let the other OSes finish if one fails
+      matrix:
+        os: [ubuntu-latest] # windows-latest, macos-latest
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4 # 1. the VM starts empty, so clone the repo
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4 # 2. install the .NET SDK
+        with:
+          global-json-file: backend/global.json
+          cache: true
+          cache-dependency-path: 'backend/**/packages.lock.json'
+
+      - name: Restore dependencies
+        run: dotnet restore # 3. download Nuget packages
+
+      - name: Build solution
+        run: dotnet build --no-restore --configuration Release # 4. compile
+
+      - name: Run tests
+        run: dotnet test --no-build --configuration Release --verbosity normal --logger trx --results-directory TestResults # 5. run tests
+
+      - name: Upload test results
+        if: always() # upload even when tests fail, which is when you need them
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }} # names must be unique across matrix jobs
+          path: backend/TestResults # root-relative (it's a `uses:` step)
+
+      - run: dotnet publish src/JobMagnet.Api -c Release --no-build -o publish
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-${{ matrix.os }}
+          path: backend/publish
+          retention-days: 7
+
+  deploy:
+    needs: build-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
