@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /backend              # where JobMagnet.sln and Directory.Packages.props live
+    schedule:
+      interval: weekly
+    groups:
+      microsoft:                     # one PR for all Microsoft.* packages
+        patterns: ["Microsoft.*", "System.*"]
+      everything-else:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directories:                     # one per Dockerfile folder
+      - /backend/src/JobMagnet.Api
+      - /backend/src/JobMagnet.Web
+      - /backend/src/JobMagnet.Worker
+    schedule:
+      interval: weekly
+    groups:
+      base-images:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /                     # it finds .github/workflows on its own
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]

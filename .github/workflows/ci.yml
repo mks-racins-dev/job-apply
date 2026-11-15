@@ -17,6 +17,7 @@ jobs:
       matrix:
         os: [ubuntu-latest] # windows-latest, macos-latest
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15  
     defaults:
       run:
         working-directory: backend
@@ -32,14 +33,28 @@ jobs:
           cache: true
           cache-dependency-path: 'backend/**/packages.lock.json'
 
-      - name: Restore dependencies
-        run: dotnet restore # 3. download Nuget packages
+      - name: Restore dependencies (locked)
+        run: dotnet restore --locked-mode  # 3. download Nuget packages
+
+      - name: Format check
+        run: dotnet format --verify-no-changes --no-restore # fail on formatting
 
       - name: Build solution
         run: dotnet build --no-restore --configuration Release # 4. compile
 
       - name: Run tests
-        run: dotnet test --no-build --configuration Release --verbosity normal --logger trx --results-directory TestResults # 5. run tests
+        run: >
+          dotnet test --no-build --configuration Release 
+          --verbosity normal --logger trx --results-directory TestResults 
+          --collect:"XPlat Code Coverage"
+
+      - name: Vulnerable packages                          
+        run: |
+          dotnet list package --vulnerable --include-transitive | tee vuln.txt
+          if grep -q "has the following vulnerable packages" vuln.txt; then
+            echo "::error::Vulnerable packages found"
+            exit 1
+          fi
 
       - name: Upload test results
         if: always() # upload even when tests fail, which is when you need them
@@ -48,17 +63,25 @@ jobs:
           name: test-results-${{ matrix.os }} # names must be unique across matrix jobs
           path: backend/TestResults # root-relative (it's a `uses:` step)
 
-      - run: dotnet publish src/JobMagnet.Api -c Release --no-build -o publish
-
-      - name: Upload build output
-        uses: actions/upload-artifact@v4
+  docker:                                                 
+    name: docker (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [Api, Web, Worker]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
         with:
-          name: api-${{ matrix.os }}
-          path: backend/publish
-          retention-days: 7
+          context: backend
+          file: backend/src/JobMagnet.${{ matrix.service }}/Dockerfile
+          push: false 
 
   deploy:
-    needs: build-test
+    needs: [build-test, docker]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     uses: ./.github/workflows/deploy.yml
     secrets: inherit
