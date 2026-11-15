@@ -24,10 +24,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4 # 1. the VM starts empty, so clone the repo
+        uses: actions/checkout@v7 # 1. the VM starts empty, so clone the repo
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4 # 2. install the .NET SDK
+        uses: actions/setup-dotnet@v6 # 2. install the .NET SDK
         with:
           global-json-file: backend/global.json
           cache: true
@@ -58,7 +58,7 @@ jobs:
 
       - name: Upload test results
         if: always() # upload even when tests fail, which is when you need them
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-${{ matrix.os }} # names must be unique across matrix jobs
           path: backend/TestResults # root-relative (it's a `uses:` step)
@@ -72,9 +72,9 @@ jobs:
       matrix:
         service: [Api, Web, Worker]
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
         with:
           context: backend
           file: backend/src/JobMagnet.${{ matrix.service }}/Dockerfile
