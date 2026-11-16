@@ -26,6 +26,10 @@ A change is done only when the build has 0 errors and all tests pass.
 - The Release agent commits and pushes only after the build and tests pass and Reviewer and Security report no open findings. It then opens a pull request into `main`.
 - The user approves the pull request. That approval is the final gate.
 - Stay within the task. Do not fix unrelated problems.
-- Hand off to the next agent only after your stage is complete.
-- Retry cap: each agent counts how many times it has been sent back to fix work in this chat. After 3 rounds, stop handing off, and report the open findings to the user.
-- Hand off automatically, following the handoff button that matches the result. Do not wait for the user between stages, except at the final pull request approval.
+- Planner coordinates Coder, Tester, Reviewer, Security, and Release as subagents, advancing only after each stage succeeds. Pass each worker the context it needs; handoff buttons are not automatic delegation.
+- Planner counts returns to Coder for fixes. After 3 fix rounds, stop and report any open findings.
+- Do not wait between stages unless a decision or tool approval is required. Stop if delegation or a required tool is unavailable.
+
+## Running the factory
+- Start a new VS Code chat with the repository open, select Planner, and describe the feature. Enable the agent/subagent tool for the chosen harness if needed.
+- The coordinator plans, delegates sequentially, and reports the opened PR for your approval. Tool approvals and authentication may still require interaction; agent instructions are not a guarantee of unattended execution.
