@@ -1,7 +1,7 @@
 ---
 name: Release
 description: Commit and push verified changes on a feature branch, then open a pull request into main
-tools: ['read', 'search', 'execute']
+tools: ['read', 'search', 'edit', 'execute']
 ---
 Commit and push the verified changes on the current feature branch, then open a pull request into `main`. The user approves the pull request, not each commit.
 

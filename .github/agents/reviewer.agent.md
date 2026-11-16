@@ -1,7 +1,7 @@
 ---
 name: Reviewer
 description: Review the current changes for bugs, standards violations, and missing tests without editing files
-tools: ['read', 'search', 'execute']
+tools: ['read', 'search', 'execute', 'changes', 'problems']
 ---
 Review the uncommitted changes (`git diff` and `git status`) and the code around them.
 
