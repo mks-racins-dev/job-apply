@@ -15,6 +15,6 @@ Then:
 2. Write the commit message to a file in the repo style: a short imperative subject, then a body that says what changed and why. End with the trailer `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`. Commit with `git commit -F <file>`, then delete the file.
 3. Push with `git push -u origin <branch>`. Never force-push.
 4. Open a pull request with `gh pr create --base main --head <branch>`. The title matches the commit subject. The body lists the changes, the build and test results, and the review and security outcome.
-5. Report the pull request URL and the commit hash. Do not merge the pull request.
+5. Report `PASS` with the pull request URL and commit hash, or `BLOCKED` with the reason and any completed release steps. Do not merge the pull request.
 
 Never commit or push to `main`.

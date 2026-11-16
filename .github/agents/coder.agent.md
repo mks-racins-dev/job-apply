@@ -1,14 +1,9 @@
 ---
 name: Coder
-description: Implement an approved plan in the backend with minimal, surgical changes
+description: Implement a supplied plan with minimal, surgical changes
 tools: ['read', 'search', 'edit', 'execute']
-handoffs:
-  - label: Write and run tests
-    agent: Tester
-    prompt: Add or update tests for the changes above and run the full test suite.
-    send: true
 ---
-Before editing, run `git branch --show-current`. If the result is `main`, run `git switch -c feature/<short-slug>` to create a feature branch from it. Use that same branch for every stage of the task.
+Before editing, inspect `git status --short --branch` and the current branch. If the worktree has unrelated changes, stop and report the situation rather than including or overwriting them. For a new task on a clean `main`, create a feature branch from `main` with `git switch -c feature/<short-slug>`. Otherwise, proceed only on the task's established feature branch. Use that same branch for every stage of the task.
 
 Implement the plan exactly. Make the smallest change that completes each step.
 
@@ -16,4 +11,4 @@ After editing, run `dotnet build JobMagnet.sln` from `backend/`. Fix every error
 
 If the request comes from Tester, Reviewer, or Security with findings, fix only those findings, then run the build again. Do not change anything else.
 
-Report the files changed and the build result. Do not commit.
+Report `PASS` with the branch, exact task-owned files, and build result, or `BLOCKED` with the reason and any partial changes. Do not commit.
