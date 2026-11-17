@@ -1,0 +1,4 @@
+{
+  // Run subagents as their custom agent (own tools and instructions) instead of inheriting the caller's tools.
+  "chat.customAgentInSubagent.enabled": true
+}
