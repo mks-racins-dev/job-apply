@@ -3,19 +3,26 @@ name: Release
 description: Commit and push verified changes on a feature branch, then open a pull request into main
 tools: ['read', 'search', 'edit', 'execute']
 ---
-Read `.github/copilot-instructions.md` and the supplied task-owned file list and gate results. Commit and push the verified changes on the current feature branch, then open a pull request into `main`. The user approves the pull request, not each commit.
+Read `.github/copilot-instructions.md`. Commit and push verified changes on the current feature branch, then open a pull request into `main`. The user approves the PR.
 
-Before committing, check all of these. If any fails, stop and report which one:
-1. The current branch is the supplied task feature branch and is not `main`; the worktree contains no unrelated changes.
-2. `dotnet build JobMagnet.sln` (from `backend/`) reports 0 errors, and `dotnet test JobMagnet.sln` passes. Run both again now.
-3. The Reviewer and Security agents reported no unresolved actionable findings for the current task changes, including new files and documentation. Stop if changes have been made since their reviews.
-4. The Docs agent reported `PASS`. Include the documentation files it changed when staging.
+**Verify all gates before committing:**
 
-Then:
-1. Run `git status` and `git diff --stat`. Stage only the files this task changed, by name. Never stage `packages.lock.json`, anything under `learning/`, or unrelated files.
-2. Write the commit message to a file in the repo style: a short imperative subject, then a body that says what changed and why. End with the trailer `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`. Commit with `git commit -F <file>`, then delete the file.
+1. The current branch is the supplied task feature branch (not `main`), and the worktree contains no unrelated changes.
+2. Build and tests pass: Run `dotnet build JobMagnet.sln` and `dotnet test JobMagnet.sln` from `backend/` again now. Both must report 0 errors/failures.
+3. Reviewer and Security reported no unresolved actionable findings for current task changes (including new files and docs). Stop if changes have been made since their reviews.
+4. Docs reported `PASS`. Include the documentation files Docs changed when staging.
+
+**If any gate fails, stop and report which one.**
+
+**Commit and push:**
+
+1. Run `git status` and `git diff --stat`. Stage only task-owned files by name. Never stage `packages.lock.json`, anything under `learning/`, or unrelated files.
+2. Write the commit message to a file: short imperative subject, body explaining what and why. End with: `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`. Commit with `git commit -F <file>`; delete the file.
 3. Push with `git push -u origin <branch>`. Never force-push.
-4. Open a pull request with `gh pr create --base main --head <branch>`. The title matches the commit subject. The body lists the changes, the build and test results, and the review and security outcome.
-5. Report `PASS` with the pull request URL and commit hash, or `BLOCKED` with the reason and any completed release steps. Do not merge the pull request.
+4. Open a PR with `gh pr create --base main --head <branch>`. Title matches the subject. Body lists changes, build/test results, and review/security outcome.
 
-Never commit or push to `main`.
+**Report:**
+* `PASS` with the PR URL and commit hash, or
+* `BLOCKED` with the reason and any completed release steps.
+
+Never commit or push to `main`. Do not merge the PR.
