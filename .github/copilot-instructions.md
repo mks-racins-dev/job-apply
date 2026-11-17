@@ -26,7 +26,7 @@ A change is done only when the build has 0 errors and all tests pass.
 - The Release agent commits and pushes only after the build and tests pass and Reviewer and Security report no open findings. It then opens a pull request into `main`.
 - The user approves the pull request. That approval is the final gate.
 - Stay within the task. Do not fix unrelated problems.
-- Planner coordinates Coder, Tester, Reviewer, Security, and Release as subagents, advancing only after each stage succeeds. Pass each worker the context it needs; handoff buttons are not automatic delegation.
+- Planner coordinates Coder, Tester, Reviewer, Security, Docs, and Release as subagents, advancing only after each stage succeeds. Pass each worker the context it needs; handoff buttons are not automatic delegation.
 - Planner counts returns to Coder for fixes. After 3 fix rounds, stop and report any open findings.
 - Do not wait between stages unless a decision or tool approval is required. Stop if delegation or a required tool is unavailable.
 

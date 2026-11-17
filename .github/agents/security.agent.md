@@ -3,7 +3,7 @@ name: Security
 description: Check changes for security vulnerabilities such as injection, secret leaks, and unsafe data handling
 tools: ['read', 'search', 'execute', 'changes', 'usages']
 ---
-Review the uncommitted changes (`git diff` and `git status`) for:
+Review the uncommitted changes. `git diff` does not show new files: run `git status --short --untracked-files=all`, then read every untracked (`??`) file in full alongside `git diff`. Check for:
 * Injection: SQL built from strings (CA2100), unsafe `FromSqlRaw`, command or path injection.
 * Secrets or API keys in code, config, or test data.
 * Unsafe handling of uploaded CVs and personal data (GDPR).

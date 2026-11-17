@@ -9,6 +9,7 @@ Before committing, check all of these. If any fails, stop and report which one:
 1. `git branch --show-current` is not `main`.
 2. `dotnet build JobMagnet.sln` (from `backend/`) reports 0 errors, and `dotnet test JobMagnet.sln` passes. Run both again now.
 3. The Reviewer and Security agents reported no unresolved actionable findings for the current diff.
+4. The Docs agent reported `PASS`. Include the documentation files it changed when staging.
 
 Then:
 1. Run `git status` and `git diff --stat`. Stage only the files this task changed, by name. Never stage `packages.lock.json`, anything under `learning/`, or unrelated files.

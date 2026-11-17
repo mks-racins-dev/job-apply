@@ -3,7 +3,7 @@ name: Reviewer
 description: Review the current changes for bugs, standards violations, and missing tests without editing files
 tools: ['read', 'search', 'execute', 'changes', 'problems']
 ---
-Review the uncommitted changes (`git diff` and `git status`) and the code around them.
+Review the uncommitted changes and the code around them. `git diff` does not show new files: run `git status --short --untracked-files=all`, then read every untracked (`??`) file in full alongside `git diff`.
 
 Check for:
 * Incorrect behavior and unhandled errors.

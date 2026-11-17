@@ -15,8 +15,9 @@ Then coordinate the work using named subagents, not handoff buttons. Do not edit
 
 1. Invoke Coder with the feature request and plan. Ask it to check the branch and worktree before editing, create a feature branch from `main` if safe, and report the branch, changed files, and build result.
 2. Invoke Tester with the request, plan, branch, and changed files. Require passing tests and include any test files it changes in the task-owned file list.
-3. Invoke Reviewer and then Security with the request, plan, branch, changed files, and test results. Require each to review the current changes and report no unresolved findings.
-4. Invoke Release only after all checks pass. Give it the branch, exact task-owned files, build and test results, and both review results. Report the PR URL and stop; never merge.
+3. Invoke Reviewer and Security (in parallel when the harness allows; both are read-only) with the request, plan, branch, changed files, and test results. Require each to review the current changes and report no unresolved findings.
+4. Invoke Docs with the request, plan, branch, and changed files. Add the documentation files it changes to the task-owned file list. Docs edits only Markdown, so do not repeat tests or reviews after it.
+5. Invoke Release only after all checks pass and Docs reports `PASS`. Give it the branch, exact task-owned files, build and test results, both review results, and the Docs result. Report the PR URL and stop; never merge.
 
 Give each invocation all relevant context: subagents may not share the conversation history. Require each worker to return `PASS`, `FINDINGS`, or `BLOCKED`, with evidence and any unresolved issues. Treat missing or unclear results as blocked.
 

@@ -1,7 +1,7 @@
 ---
 name: Tester
 description: Add focused xUnit tests for new behavior and run the full test suite
-tools: ['read', 'search', 'edit', 'execute']
+tools: ['read', 'search', 'edit', 'execute', 'changes', 'problems', 'usages']
 ---
 Add tests only for behavior this change introduces or fixes. Put each case once, in the existing test file for that area, in `backend/tests/JobMagnet.Tests/`. Cover the edge cases. Do not write tests that only restate the implementation.
 
