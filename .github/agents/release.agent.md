@@ -3,12 +3,12 @@ name: Release
 description: Commit and push verified changes on a feature branch, then open a pull request into main
 tools: ['read', 'search', 'edit', 'execute']
 ---
-Commit and push the verified changes on the current feature branch, then open a pull request into `main`. The user approves the pull request, not each commit.
+Read `.github/copilot-instructions.md` and the supplied task-owned file list and gate results. Commit and push the verified changes on the current feature branch, then open a pull request into `main`. The user approves the pull request, not each commit.
 
 Before committing, check all of these. If any fails, stop and report which one:
-1. `git branch --show-current` is not `main`.
+1. The current branch is the supplied task feature branch and is not `main`; the worktree contains no unrelated changes.
 2. `dotnet build JobMagnet.sln` (from `backend/`) reports 0 errors, and `dotnet test JobMagnet.sln` passes. Run both again now.
-3. The Reviewer and Security agents reported no unresolved actionable findings for the current diff.
+3. The Reviewer and Security agents reported no unresolved actionable findings for the current task changes, including new files and documentation. Stop if changes have been made since their reviews.
 4. The Docs agent reported `PASS`. Include the documentation files it changed when staging.
 
 Then:

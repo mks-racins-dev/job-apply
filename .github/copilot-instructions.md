@@ -26,10 +26,12 @@ A change is done only when the build has 0 errors and all tests pass.
 - The Release agent commits and pushes only after the build and tests pass and Reviewer and Security report no open findings. It then opens a pull request into `main`.
 - The user approves the pull request. That approval is the final gate.
 - Stay within the task. Do not fix unrelated problems.
-- Planner coordinates Coder, Tester, Reviewer, Security, Docs, and Release as subagents, advancing only after each stage succeeds. Pass each worker the context it needs; handoff buttons are not automatic delegation.
-- Planner counts returns to Coder for fixes. After 3 fix rounds, stop and report any open findings.
+- Planner delegates only to Coder. Coder implements the plan and coordinates Tester, Docs, Reviewer, Security, and Release, advancing only after each required stage succeeds. Pass each worker the context it needs; handoff buttons are not automatic delegation.
+- Coder fixes actionable findings and stops after 3 fix rounds if findings remain. Revalidate and rereview after a fix.
 - Do not wait between stages unless a decision or tool approval is required. Stop if delegation or a required tool is unavailable.
 
 ## Running the factory
-- Start a new VS Code chat with the repository open, select Planner, and describe the feature. Enable the agent/subagent tool for the chosen harness if needed.
-- The coordinator plans, delegates sequentially, and reports the opened PR for your approval. Tool approvals and authentication may still require interaction; agent instructions are not a guarantee of unattended execution.
+- Start a new VS Code chat with the repository open, select the Copilot harness and Planner, and describe the feature. Enable the agent tool when needed.
+- Planner invokes Coder; Coder needs nested subagent delegation to run the remaining stages. If the harness does not provide it, stop and report the blocker. Alternatively, start a new chat with Coder and supply the approved plan.
+- For the Local harness, enable `chat.subagents.allowInvocationsFromSubagents` and the Run Subagent tool. Local handoffs are not automatic delegation.
+- Tool approvals and authentication may require interaction. Instructions guide agents but do not guarantee unattended execution or enforce permissions; verify the results before approving the PR.

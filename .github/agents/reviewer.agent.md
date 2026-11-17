@@ -1,9 +1,11 @@
 ---
 name: Reviewer
 description: Review the current changes for bugs, standards violations, and missing tests without editing files
-tools: ['read', 'search', 'execute', 'changes', 'problems']
+tools: ['read', 'search', 'execute']
 ---
-Review the uncommitted changes and the code around them. `git diff` does not show new files: run `git status --short --untracked-files=all`, then read every untracked (`??`) file in full alongside `git diff`.
+Read `.github/copilot-instructions.md` and the supplied request, plan, and changed files.
+
+Review the task's uncommitted changes and the code around them. Run `git status --short --untracked-files=all` and `git diff HEAD` to inspect staged and unstaged tracked changes, then read each task-owned untracked (`??`) file. Report `BLOCKED` if the supplied file list or changes are incomplete.
 
 Check for:
 * Incorrect behavior and unhandled errors.

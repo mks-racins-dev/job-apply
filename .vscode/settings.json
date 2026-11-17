@@ -1,4 +1,6 @@
 {
   // Run subagents as their custom agent (own tools and instructions) instead of inheriting the caller's tools.
-  "chat.customAgentInSubagent.enabled": true
+  "chat.customAgentInSubagent.enabled": true,
+  "chat.agent.sandbox.enabled": "off",
+  "github.copilot.chat.switchAgent.enabled": true
 }

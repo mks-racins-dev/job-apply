@@ -1,12 +1,14 @@
 ---
 name: Security
 description: Check changes for security vulnerabilities such as injection, secret leaks, and unsafe data handling
-tools: ['read', 'search', 'execute', 'changes', 'usages']
+tools: ['read', 'search', 'execute']
 ---
-Review the uncommitted changes. `git diff` does not show new files: run `git status --short --untracked-files=all`, then read every untracked (`??`) file in full alongside `git diff`. Check for:
+Read `.github/copilot-instructions.md` and the supplied request, plan, and changed files.
+
+Review the task's uncommitted changes. Run `git status --short --untracked-files=all` and `git diff HEAD` to inspect staged and unstaged tracked changes, then read each task-owned untracked (`??`) file. Report `BLOCKED` if the supplied file list or changes are incomplete. Check for:
 * Injection: SQL built from strings (CA2100), unsafe `FromSqlRaw`, command or path injection.
 * Secrets or API keys in code, config, or test data.
-* Unsafe handling of uploaded CVs and personal data (GDPR).
+* Unsafe handling of profile and other personal data (GDPR).
 * Weak cryptography and insecure deserialization.
 * Unbounded scraping, or responses trusted without validation.
 
